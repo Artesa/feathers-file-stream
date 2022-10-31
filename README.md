@@ -20,7 +20,7 @@ app.use(
   multerInstance.array("files"),
   expressHandleStreams({ field: "files", isArray: true }),
   new ServiceFileStreamFS({
-    root: path.join(__dirname, ".uploads")
+    root: path.join(__dirname, "uploads")
   }),
   expressMiddlewareStream()
 );

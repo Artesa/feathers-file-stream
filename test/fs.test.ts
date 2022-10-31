@@ -37,7 +37,7 @@ describe("general.test.ts", function () {
   it("download file", async function () {
     const buffer = Buffer.from("some data download file");
     const key = "test-download-file.txt";
-    const filepath = path.join(__dirname, ".uploads", key);
+    const filepath = path.join(__dirname, "uploads", key);
     await fsp.writeFile(filepath, buffer);
 
     const { body: downloadResult } = await supertest(app)
@@ -60,7 +60,7 @@ describe("general.test.ts", function () {
   it("remove file", async function () {
     const buffer = Buffer.from("some data download file");
     const key = "test-remove-file.txt";
-    const filepath = path.join(__dirname, ".uploads", key);
+    const filepath = path.join(__dirname, "uploads", key);
     await fsp.writeFile(filepath, buffer);
 
     const result = await supertest(app).delete(`/uploads/${key}`).expect(200);

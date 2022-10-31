@@ -122,4 +122,4 @@ dist
 .cache
 .temp
 
-test/.uploads/*
+test/uploads/*
