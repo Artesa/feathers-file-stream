@@ -17,14 +17,13 @@ import path from "path";
 import makeFeathersClient from "@feathersjs/feathers";
 import makeRestClient from "@feathersjs/rest-client";
 import fetch from "node-fetch";
-import supertest from "supertest";
 
-type Services = {
+type ServicesFS = {
   uploads: ServiceFileStreamFS & ServiceAddons<any>;
 };
 
-export const mockServer = async () => {
-  const app = express<Services>(feathers());
+export const mockFSServer = async () => {
+  const app = express<ServicesFS>(feathers());
 
   app.use(helmet());
   app.use(cors());

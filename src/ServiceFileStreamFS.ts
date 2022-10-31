@@ -1,7 +1,7 @@
 import type { Params } from "@feathersjs/feathers";
-import { FeathersError, GeneralError } from "@feathersjs/errors";
+import { GeneralError, NotFound } from "@feathersjs/errors";
 import { createReadStream, createWriteStream } from "fs";
-import { unlink } from "fs/promises";
+import fsp from "fs/promises";
 import path from "path";
 import streamPomises from "stream/promises";
 import type {
@@ -69,8 +69,15 @@ export class ServiceFileStreamFS {
     _params?: Params
   ): Promise<ServiceFileStreamCreateResult> {
     const file = path.join(this.options.root, id);
+    const exists = await fsp
+      .access(file)
+      .then(() => true)
+      .catch(() => false);
+    if (!exists) {
+      throw new NotFound("File not found");
+    }
     try {
-      await unlink(file);
+      await fsp.unlink(file);
       return { key: id };
     } catch (error) {
       throw new GeneralError(`Could not remove file ${id}`, {
