@@ -4,19 +4,32 @@ import { defineConfig } from "vite";
 import dts from "vite-plugin-dts";
 
 export default defineConfig({
-  plugins: [dts()],
+  plugins: [
+    dts({
+      insertTypesEntry: true
+    })
+  ],
   build: {
     lib: {
       entry: path.resolve(__dirname, "src/index.ts"),
-      name: "feathers-file-stream",
-      fileName: "feathers-file-stream"
+      name: "index",
+      fileName: "index",
+      formats: ["es", "cjs"]
     },
-    outDir: path.resolve(__dirname, "dist"),
+    // outDir: path.resolve(__dirname, "dist"),
     sourcemap: true,
     rollupOptions: {
       // make sure to externalize deps that shouldn't be bundled
       // into your library
-      external: [],
+      external: [
+        "path",
+        "fs",
+        "fs/promises",
+        "stream",
+        "stream/promises",
+        "crypto",
+        "aws-sdk"
+      ],
       output: {}
     }
   },
