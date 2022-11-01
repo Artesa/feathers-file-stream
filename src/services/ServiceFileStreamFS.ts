@@ -1,6 +1,5 @@
 import type { Params } from "@feathersjs/feathers";
 import { GeneralError, NotFound } from "@feathersjs/errors";
-import type { Stats } from "fs";
 import { createReadStream, createWriteStream } from "fs";
 import fsp from "fs/promises";
 import path from "path";
@@ -58,19 +57,19 @@ export class ServiceFileStreamFS {
     const { root } = this.options;
     const { isArray, items } = asArray(data);
     const promises = items.map(async (item) => {
-      const { key, stream } = item;
+      const { id, stream } = item;
       // create the directory if it doesn't exist
-      const dir = path.dirname(key);
+      const dir = path.dirname(id);
       await fsp.mkdir(path.join(root, dir), { recursive: true });
-      const writeStream = createWriteStream(path.join(root, key), {});
+      const writeStream = createWriteStream(path.join(root, id), {});
       await streamPomises.pipeline(stream, writeStream);
     });
     await Promise.all(promises);
 
     const results = items.map((item) => {
-      const { key } = item;
+      const { id } = item;
       return {
-        key
+        id
       };
     });
 
@@ -89,7 +88,7 @@ export class ServiceFileStreamFS {
 
     try {
       await fsp.unlink(file);
-      return { key: id };
+      return { id };
     } catch (error) {
       throw new GeneralError(`Could not remove file ${id}`, {
         error
@@ -124,8 +123,8 @@ export class ServiceFileStreamFS {
     }
   }
 
-  get(key: string, params?: any): Promise<ServiceFileStreamGetResult> {
-    return this._get(key, params);
+  get(id: string, params?: any): Promise<ServiceFileStreamGetResult> {
+    return this._get(id, params);
   }
 
   create(

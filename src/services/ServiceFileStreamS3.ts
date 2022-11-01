@@ -75,12 +75,12 @@ export class ServiceFileStreamS3 {
     const bucket = params?.bucket || this.bucket;
 
     const promises = items.map(async (item) => {
-      const { stream, key, ...options } = item;
+      const { stream, id, ...options } = item;
       const passThroughStream = new PassThrough();
 
       const defaultParams = {
         Bucket: bucket,
-        Key: key,
+        Key: id,
         Body: passThroughStream
       };
 
@@ -105,7 +105,7 @@ export class ServiceFileStreamS3 {
 
     await Promise.all(promises);
 
-    return items.map((item) => ({ key: item.key }));
+    return items.map((item) => ({ id: item.id }));
   }
 
   async _get(
@@ -187,7 +187,7 @@ export class ServiceFileStreamS3 {
       );
 
       return {
-        key: id
+        id
       };
     } catch (error) {
       throw new GeneralError("Error deleting file", {
@@ -196,8 +196,8 @@ export class ServiceFileStreamS3 {
     }
   }
 
-  get(key: string, params?: any): Promise<ServiceFileStreamGetResult> {
-    return this._get(key, params);
+  get(id: string, params?: any): Promise<ServiceFileStreamGetResult> {
+    return this._get(id, params);
   }
 
   create(

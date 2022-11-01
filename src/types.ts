@@ -1,12 +1,12 @@
 import type { Readable } from "stream";
 
 export type ServiceFileStreamCreateData = {
-  key: string;
+  id: string;
   stream: Readable;
 };
 
 export type ServiceFileStreamCreateResult = {
-  key: string;
+  id: string;
 };
 
 export type ServiceFileStreamGetResult = {

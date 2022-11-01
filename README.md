@@ -65,7 +65,7 @@ app.use(
 
 ```ts
 app.service("uploads").create({
-  key: "my-file.txt", // the filename to save
+  id: "my-file.txt", // the filename to save
   stream: fs.createReadStream("my-file.txt") // the stream to read
 });
 ```

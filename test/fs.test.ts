@@ -41,17 +41,17 @@ describe("fs.test.ts", function () {
     expect(uploadResult).to.be.an("array");
     expect(uploadResult.length).to.equal(1);
     expect(uploadResult[0]).to.be.an("object");
-    expect(uploadResult[0].key).to.be.a("string");
+    expect(uploadResult[0].id).to.be.a("string");
   });
 
   it("download file", async function () {
     const buffer = Buffer.from("some data download file");
-    const key = "test-download-file.txt";
-    const filepath = path.join(__dirname, "uploads", key);
+    const id = "test-download-file.txt";
+    const filepath = path.join(__dirname, "uploads", id);
     await fsp.writeFile(filepath, buffer);
 
     const { body: downloadResult } = await supertest(app)
-      .get(`/uploads/${key}`)
+      .get(`/uploads/${id}`)
       .buffer()
       .parse((res, cb) => {
         res.setEncoding("binary");
@@ -69,13 +69,13 @@ describe("fs.test.ts", function () {
 
   it("remove file", async function () {
     const buffer = Buffer.from("some data download file");
-    const key = "test-remove-file.txt";
-    const filepath = path.join(__dirname, "uploads", key);
+    const id = "test-remove-file.txt";
+    const filepath = path.join(__dirname, "uploads", id);
     await fsp.writeFile(filepath, buffer);
 
-    const result = await supertest(app).delete(`/uploads/${key}`).expect(200);
+    const result = await supertest(app).delete(`/uploads/${id}`).expect(200);
 
     expect(result.body).to.be.an("object");
-    expect(result.body.key).to.equal(key);
+    expect(result.body.id).to.equal(id);
   });
 });

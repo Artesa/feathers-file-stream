@@ -15,8 +15,8 @@ export const transformItems =
       if (!ext?.startsWith(".")) {
         ext = `.${ext}`;
       }
-      const key = `${hash}${ext}`;
-      const result: MulterFile & { key: string } = { ...item, key };
+      const id = `${hash}${ext}`;
+      const result: MulterFile & { id: string } = { ...item, id };
       return result;
     })(context);
   };
@@ -33,8 +33,8 @@ export const transformItemsNested =
       if (!ext?.startsWith(".")) {
         ext = `.${ext}`;
       }
-      const key = `test/test/${hash}${ext}`;
-      const result: MulterFile & { key: string } = { ...item, key };
+      const id = `test/test/${hash}${ext}`;
+      const result: MulterFile & { id: string } = { ...item, id };
       return result;
     })(context);
   };
