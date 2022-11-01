@@ -81,9 +81,10 @@ describe("fs.test.ts", function () {
 
   it("move file", async function () {
     const buffer = Buffer.from("some data download file");
-    const id = "test-move-file.txt";
-    const filepath = path.join(__dirname, "uploads", id);
-    await fsp.writeFile(filepath, buffer);
+    const oldId = "test-move-file.txt";
+    const newId = "test-move-file-2.txt";
+    const idFolder = (id: string) => path.join(__dirname, "uploads", id);
+    await fsp.writeFile(idFolder(oldId), buffer);
 
     const exists = async (file) =>
       fsp
@@ -91,19 +92,13 @@ describe("fs.test.ts", function () {
         .then(() => true)
         .catch(() => false);
 
-    expect(await exists(filepath)).to.be.true;
+    expect(await exists(idFolder(oldId))).to.be.true;
 
-    app.service("uploads").move(id, "test-move-file-2.txt");
+    await app.service("uploads").move(oldId, newId);
 
-    expect(
-      await exists(path.join(__dirname, "uploads", "test-move-file-2.txt"))
-    ).to.be.true;
-    expect(
-      await fsp.readFile(
-        path.join(__dirname, "uploads", "test-move-file-2.txt")
-      )
-    ).to.deep.equal(buffer);
+    expect(await exists(idFolder(newId))).to.be.true;
+    expect(await fsp.readFile(idFolder(newId))).to.deep.equal(buffer);
 
-    expect(await exists(filepath)).to.be.false;
+    expect(await exists(idFolder(oldId))).to.be.false;
   });
 });
