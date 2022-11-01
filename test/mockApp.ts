@@ -7,8 +7,10 @@ import multer from "multer";
 import compress from "compression";
 import cors from "cors";
 import helmet from "helmet";
+import type {
+  MulterFile } from "../src";
 import {
-  expressHandleStreams,
+  expressHandleIncomingStreams,
   expressSendStreamForGet,
   ServiceFileStreamFS
 } from "../src";
@@ -22,7 +24,11 @@ type ServicesFS = {
   uploads: ServiceFileStreamFS & ServiceAddons<any>;
 };
 
-export const mockFSServer = async () => {
+type MockFSServerOptions = {
+  transformItems: (file: MulterFile, req: any, res: any) => any;
+};
+
+export const mockFSServer = async (options?: MockFSServerOptions) => {
   const app = express<ServicesFS>(feathers());
 
   app.use(helmet());
@@ -46,7 +52,11 @@ export const mockFSServer = async () => {
   app.use(
     "/uploads",
     multerInstance.array("files"),
-    expressHandleStreams({ field: "files", isArray: true }),
+    expressHandleIncomingStreams({
+      field: "files",
+      isArray: true,
+      transform: options?.transformItems
+    }),
     new ServiceFileStreamFS({
       root: path.join(__dirname, "uploads")
     }),

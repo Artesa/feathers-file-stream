@@ -9,7 +9,7 @@ npm i @artesa/feathers-file-stream
 ```ts
 import multer from "multer";
 import {
-  expressHandleStreams,
+  expressHandleIncomingStreams,
   ServiceFileStreamFS,
   expressSendStreamForGet
 } from "@artesa/feathers-file-stream";
@@ -18,7 +18,7 @@ const multerInstance = multer();
 app.use(
   "/uploads",
   multerInstance.array("files"),
-  expressHandleStreams({ field: "files", isArray: true }),
+  expressHandleIncomingStreams({ field: "files", isArray: true }),
   new ServiceFileStreamFS({
     root: path.join(__dirname, "uploads")
   }),
@@ -32,7 +32,7 @@ app.use(
 import multer from "multer";
 import { S3Client } from "@aws-sdk/client-s3";
 import {
-  expressHandleStreams,
+  expressHandleIncomingStreams,
   ServiceFileStreamS3,
   expressSendStreamForGet
 } from "@artesa/feathers-file-stream";
@@ -47,7 +47,7 @@ const s3 = new S3Client({
 app.use(
   "/uploads",
   multerInstance.array("files"), // looks for files and puts them in req.files
-  expressHandleStreams({ field: "files", isArray: true }), // looks for req.files and puts them in req.body, so that it arrives at the service data object in the create method
+  expressHandleIncomingStreams({ field: "files", isArray: true }), // looks for req.files and puts them in req.body, so that it arrives at the service data object in the create method
   new ServiceFileStreamS3({
     s3: new S3Client({
       credentials: {

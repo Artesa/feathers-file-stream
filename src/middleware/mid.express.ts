@@ -1,33 +1,44 @@
 import type { Request, Response, NextFunction } from "express";
 import type { MulterFile, ServiceFileStreamGetResult } from "../types";
-import { isGetResult } from "../utils";
+import { asArray, isGetResult } from "../utils";
 
-export type ExpressHandleStreamsOptions = {
+export type expressHandleIncomingStreamsOptions<
+  REQ,
+  RES,
+  TR extends Record<string, any> = any
+> = {
   isArray: boolean;
   field: string;
+  transform?: (file: MulterFile, req: REQ, res: RES) => TR | void;
 };
 
-type FileOrFiles<T> = T extends true ? MulterFile[] : MulterFile;
-
-export const expressHandleStreams = (options: ExpressHandleStreamsOptions) => {
-  const { field, isArray } = options;
-  return (
-    req: Request & { files?: MulterFile[]; feathers: any },
-    res: Response,
-    next: NextFunction
+export const expressHandleIncomingStreams = <
+  REQ extends Request = Request & { files?: MulterFile[]; feathers: any },
+  RES extends Response = Response,
+  RT extends Record<string, any> = Record<string, any>
+>(
+    options: expressHandleIncomingStreamsOptions<REQ, RES, RT>
   ) => {
+  const { field } = options;
+  return (req: REQ, res: RES, next: NextFunction) => {
     if (
       req.method !== "POST" ||
       !(field in req) ||
-      (isArray && !Array.isArray(req[field]))
+      (options.isArray && !Array.isArray(req[field]))
     ) {
       next();
       return;
     }
 
-    const files = req[field] as FileOrFiles<typeof isArray>;
+    const { isArray, items } = asArray<MulterFile>(req[field]);
 
-    req.body = files;
+    const files = options.transform
+      ? items.map((file) => {
+        return options.transform(file, req, res) || file;
+      })
+      : items;
+
+    req.body = isArray ? files : files[0];
 
     next();
     return;
