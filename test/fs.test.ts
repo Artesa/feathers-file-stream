@@ -50,7 +50,7 @@ describe("fs.test.ts", function () {
     const filepath = path.join(__dirname, "uploads", id);
     await fsp.writeFile(filepath, buffer);
 
-    const { body: downloadResult } = await supertest(app)
+    const result = await supertest(app)
       .get(`/uploads/${id}`)
       .buffer()
       .parse((res, cb) => {
@@ -63,8 +63,13 @@ describe("fs.test.ts", function () {
       })
       .expect(200);
 
-    expect(downloadResult).to.be.an.instanceOf(Buffer);
-    expect(downloadResult).to.deep.equal(buffer);
+    expect(result.body).to.be.an.instanceOf(Buffer);
+    expect(result.body).to.deep.equal(buffer);
+    expect(result.header["content-type"]).to.equal("text/plain; charset=utf-8");
+    expect(result.header["content-disposition"]).to.equal(
+      "attachment;filename=test-download-file.txt"
+    );
+    expect(result.header["content-length"]).to.equal(`${buffer.length}`);
   });
 
   it("remove file", async function () {
