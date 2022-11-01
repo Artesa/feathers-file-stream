@@ -33,7 +33,9 @@
     "LICENSE",
     "README.md",
     "src/**",
-    "dist/**"
+    "dist/**",
+    "tsconfig.json",
+    "vite.config.ts"
   ],
   "scripts": {
     "compile": "shx rm -rf dist/ && vite build",
