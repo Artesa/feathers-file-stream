@@ -10,6 +10,6 @@ describe("index.test.ts", function () {
     expect(src.unpipe).to.be.a("function");
 
     expect(src.expressHandleStreams).to.be.a("function");
-    expect(src.expressMiddlewareStream).to.be.a("function");
+    expect(src.expressSendStreamForGet).to.be.a("function");
   });
 });

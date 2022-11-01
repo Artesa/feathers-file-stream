@@ -11,7 +11,7 @@ import multer from "multer";
 import {
   expressHandleStreams,
   ServiceFileStreamFS,
-  expressMiddlewareStream
+  expressSendStreamForGet
 } from "@artesa/feathers-file-stream";
 const multerInstance = multer();
 
@@ -22,7 +22,7 @@ app.use(
   new ServiceFileStreamFS({
     root: path.join(__dirname, "uploads")
   }),
-  expressMiddlewareStream()
+  expressSendStreamForGet()
 );
 ```
 
@@ -34,7 +34,7 @@ import { S3Client } from "@aws-sdk/client-s3";
 import {
   expressHandleStreams,
   ServiceFileStreamS3,
-  expressMiddlewareStream
+  expressSendStreamForGet
 } from "@artesa/feathers-file-stream";
 const multerInstance = multer();
 const s3 = new S3Client({
@@ -57,7 +57,7 @@ app.use(
     }),
     bucket: "my-bucket"
   }),
-  expressMiddlewareStream() // pipes the stream for a get request to the response
+  expressSendStreamForGet() // pipes the stream for a get request to the response
 );
 ```
 

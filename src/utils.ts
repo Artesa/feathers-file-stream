@@ -1,3 +1,4 @@
+import type { ServiceFileStreamGetResult } from "./types";
 import type { MaybeArray } from "./utility-types";
 
 export const asArray = <T>(
@@ -14,4 +15,8 @@ export const asArray = <T>(
     isArray,
     items: [items]
   };
+};
+
+export const isGetResult = (data: any): data is ServiceFileStreamGetResult => {
+  return data?.stream !== undefined;
 };

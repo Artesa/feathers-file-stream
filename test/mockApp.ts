@@ -9,7 +9,7 @@ import cors from "cors";
 import helmet from "helmet";
 import {
   expressHandleStreams,
-  expressMiddlewareStream,
+  expressSendStreamForGet,
   ServiceFileStreamFS
 } from "../src";
 import path from "path";
@@ -50,7 +50,7 @@ export const mockFSServer = async () => {
     new ServiceFileStreamFS({
       root: path.join(__dirname, "uploads")
     }),
-    expressMiddlewareStream()
+    expressSendStreamForGet()
   );
 
   app.use(express.notFound());

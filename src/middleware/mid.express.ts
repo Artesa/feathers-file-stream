@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import type { MulterFile, ServiceFileStreamGetResult } from "../types";
+import { isGetResult } from "../utils";
 
 export type ExpressHandleStreamsOptions = {
   isArray: boolean;
@@ -33,20 +34,24 @@ export const expressHandleStreams = (options: ExpressHandleStreamsOptions) => {
   };
 };
 
-export const expressMiddlewareStream =
-  () => (req: Request, res: Response, next: NextFunction) => {
-    if (req.method !== "GET" || !("data" in res)) {
-      return next();
-    }
+export const expressSendStreamForGet =
+  () =>
+    (
+      req: Request,
+      res: Response & { data: ServiceFileStreamGetResult },
+      next: NextFunction
+    ) => {
+      if (req.method !== "GET" || !isGetResult(res.data)) {
+        return next();
+      }
 
-    const { stream, header } =
-      res.data as unknown as ServiceFileStreamGetResult;
+      const { stream, header = {} } = res.data;
 
-    res.set(header);
+      res.set(header);
 
-    stream.on("data", (chunk) => res.write(chunk));
-    stream.once("end", () => res.end());
-    stream.once("error", (err) => {
-      res.end();
-    });
-  };
+      stream.on("data", (chunk) => res.write(chunk));
+      stream.once("end", () => res.end());
+      stream.once("error", (err) => {
+        res.end();
+      });
+    };
