@@ -59,7 +59,10 @@ export class ServiceFileStreamFS {
     const { isArray, items } = asArray(data);
     const promises = items.map(async (item) => {
       const { key, stream } = item;
-      const writeStream = createWriteStream(path.join(root, key));
+      // create the directory if it doesn't exist
+      const dir = path.dirname(key);
+      await fsp.mkdir(path.join(root, dir), { recursive: true });
+      const writeStream = createWriteStream(path.join(root, key), {});
       await streamPomises.pipeline(stream, writeStream);
     });
     await Promise.all(promises);

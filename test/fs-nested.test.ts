@@ -1,11 +1,12 @@
 import supertest from "supertest";
 import { mockFSServer } from "./mockApp";
-import { transformItems } from "./utils";
+import { transformItems, transformItemsNested } from "./utils";
 import { expect } from "vitest";
 import fsp from "fs/promises";
 import path from "path";
+import type { HookContext } from "@feathersjs/feathers";
 
-describe("fs.test.ts", function () {
+describe("fs-nested.test.ts", function () {
   let app: Awaited<ReturnType<typeof mockFSServer>>;
 
   beforeAll(async () => {
@@ -15,19 +16,23 @@ describe("fs.test.ts", function () {
 
     uploadsService.hooks({
       before: {
-        create: [transformItems()]
+        get: [
+          (context: HookContext) => {
+            // @ts-ignore
+            context.id = `test/test/${context.id}`;
+            return context;
+          }
+        ],
+        create: [transformItemsNested()],
+        remove: [
+          (context: HookContext) => {
+            // @ts-ignore
+            context.id = `test/test/${context.id}`;
+            return context;
+          }
+        ]
       }
     });
-  });
-
-  it("get throws NotFound for non-existing file", async () => {
-    const res = await supertest(app).get("/uploads/does-not-exist").expect(404);
-  });
-
-  it("remove throws NotFound for non-existing file", async () => {
-    const res = await supertest(app)
-      .delete("/uploads/does-not-exist")
-      .expect(404);
   });
 
   it("upload file", async function () {
@@ -42,12 +47,13 @@ describe("fs.test.ts", function () {
     expect(uploadResult.length).to.equal(1);
     expect(uploadResult[0]).to.be.an("object");
     expect(uploadResult[0].key).to.be.a("string");
+    expect(uploadResult[0].key.startsWith("test/test/")).to.be.true;
   });
 
   it("download file", async function () {
     const buffer = Buffer.from("some data download file");
     const key = "test-download-file.txt";
-    const filepath = path.join(__dirname, "uploads", key);
+    const filepath = path.join(__dirname, "uploads/test/test/", key);
     await fsp.writeFile(filepath, buffer);
 
     const { body: downloadResult } = await supertest(app)
@@ -70,12 +76,12 @@ describe("fs.test.ts", function () {
   it("remove file", async function () {
     const buffer = Buffer.from("some data download file");
     const key = "test-remove-file.txt";
-    const filepath = path.join(__dirname, "uploads", key);
+    const filepath = path.join(__dirname, "uploads/test/test/", key);
     await fsp.writeFile(filepath, buffer);
 
     const result = await supertest(app).delete(`/uploads/${key}`).expect(200);
 
     expect(result.body).to.be.an("object");
-    expect(result.body.key).to.equal(key);
+    expect(result.body.key).to.equal(`test/test/${key}`);
   });
 });

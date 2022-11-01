@@ -20,3 +20,21 @@ export const transformItems =
       return result;
     })(context);
   };
+
+export const transformItemsNested =
+  () =>
+  <H extends HookContext>(context: H) => {
+    return alterItems((item: MulterFile) => {
+      const hash = crypto.randomBytes(16).toString("hex");
+      let ext =
+        item.detectedFileExtension ||
+        item.clientReportedFileExtension ||
+        item.originalName.split(".").pop();
+      if (!ext?.startsWith(".")) {
+        ext = `.${ext}`;
+      }
+      const key = `test/test/${hash}${ext}`;
+      const result: MulterFile & { key: string } = { ...item, key };
+      return result;
+    })(context);
+  };
