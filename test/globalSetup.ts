@@ -4,9 +4,8 @@ import path from "path";
 export default async function () {
   const unlink = async () => {
     const dir = path.join(__dirname, "uploads");
-    const result = (await fsp.readdir(dir)).map((file) =>
-      fsp.unlink(path.join(dir, file))
-    );
+    await fsp.rm(dir, { recursive: true, force: true });
+    fsp.mkdir(dir, { recursive: true });
   };
 
   return () => new Promise<void>((resolve) => unlink().then(resolve));
