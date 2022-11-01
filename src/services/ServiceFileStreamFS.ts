@@ -8,9 +8,9 @@ import type {
   ServiceFileStreamCreateData,
   ServiceFileStreamCreateResult,
   ServiceFileStreamGetResult
-} from "./types";
-import type { MaybeArray } from "./utility-types";
-import { asArray } from "./utils";
+} from "../types";
+import type { MaybeArray } from "../utility-types";
+import { asArray } from "../utils";
 
 export type ServiceFileStreamFSOptions = {
   root: string;

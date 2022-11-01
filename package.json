@@ -49,7 +49,8 @@
     "@aws-sdk/lib-storage": "^3.199.0",
     "@feathersjs/errors": "^4.5.15",
     "@feathersjs/feathers": "^4.5.15",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "feathers-hooks-common": "^6.1.5"
   },
   "devDependencies": {
     "@feathersjs/client": "^4.5.15",
@@ -71,7 +72,6 @@
     "eslint": "^8.23.1",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "feathers-hooks-common": "^6.1.5",
     "get-port": "^5.1.1",
     "helmet": "^6.0.0",
     "multer": "^2.0.0-rc.4",
