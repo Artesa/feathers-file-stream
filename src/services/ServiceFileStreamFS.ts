@@ -1,5 +1,6 @@
 import type { Params } from "@feathersjs/feathers";
 import { GeneralError, NotFound } from "@feathersjs/errors";
+import type { Stats } from "fs";
 import { createReadStream, createWriteStream } from "fs";
 import fsp from "fs/promises";
 import path from "path";
@@ -11,6 +12,7 @@ import type {
 } from "../types";
 import type { MaybeArray } from "../utility-types";
 import { asArray } from "../utils";
+import mime from "mime-types";
 
 export type ServiceFileStreamFSOptions = {
   root: string;
@@ -23,11 +25,20 @@ export class ServiceFileStreamFS {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async _get(key: string, _params?: any): Promise<ServiceFileStreamGetResult> {
+  async _get(id: string, _params?: any): Promise<ServiceFileStreamGetResult> {
+    const info = await this.getStat(id);
+
     const { root } = this.options;
-    const stream = createReadStream(path.join(root, key));
+    const stream = createReadStream(path.join(root, id));
+
+    const contentType = mime.lookup(id) || "application/octet-stream";
+
     return {
-      header: {},
+      header: {
+        "Content-Type": contentType,
+        "Content-disposition": "attachment;filename=" + id,
+        "Content-Length": info.size
+      },
       stream
     };
   }
@@ -68,14 +79,11 @@ export class ServiceFileStreamFS {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _params?: Params
   ): Promise<ServiceFileStreamCreateResult> {
-    const file = path.join(this.options.root, id);
-    const exists = await fsp
-      .access(file)
-      .then(() => true)
-      .catch(() => false);
-    if (!exists) {
-      throw new NotFound("File not found");
-    }
+    await this.checkAccess(id);
+
+    const { root } = this.options;
+    const file = path.join(root, id);
+
     try {
       await fsp.unlink(file);
       return { key: id };
@@ -83,6 +91,33 @@ export class ServiceFileStreamFS {
       throw new GeneralError(`Could not remove file ${id}`, {
         error
       });
+    }
+  }
+
+  /**
+   * Get the file stats and throw a NotFound error if the file doesn't exist
+   * @param id
+   * @returns The file stats
+   */
+  private async getStat(id: string) {
+    const file = path.join(this.options.root, id);
+    try {
+      return await fsp.stat(file);
+    } catch (err) {
+      throw new NotFound("File not found");
+    }
+  }
+
+  /**
+   * Check if a file exists and throws a NotFound error if it doesn't
+   * @param id The filename to check
+   */
+  private async checkAccess(id: string) {
+    const file = path.join(this.options.root, id);
+    try {
+      await fsp.access(file);
+    } catch (err) {
+      throw new NotFound("File not found");
     }
   }
 

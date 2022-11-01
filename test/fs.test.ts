@@ -20,6 +20,16 @@ describe("general.test.ts", function () {
     });
   });
 
+  it("get throws NotFound for non-existing file", async () => {
+    const res = await supertest(app).get("/uploads/does-not-exist").expect(404);
+  });
+
+  it("remove throws NotFound for non-existing file", async () => {
+    const res = await supertest(app)
+      .delete("/uploads/does-not-exist")
+      .expect(404);
+  });
+
   it("upload file", async function () {
     const buffer = Buffer.from("some data");
 
