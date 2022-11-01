@@ -29,9 +29,8 @@ export type ServiceFileStreamS3GetParams = {
 
 export type ServiceFileStreamS3GetResult = ServiceFileStreamGetResult;
 
-export type ServiceFileStreamS3CreateData = Omit<
-  PutObjectCommandInput,
-  "Body"
+export type ServiceFileStreamS3CreateData = Partial<
+  Omit<PutObjectCommandInput, "Body">
 > &
   ServiceFileStreamCreateData;
 
@@ -138,20 +137,20 @@ export class ServiceFileStreamS3 {
       //     });
       // }
       // Prepare cache headers
-      if (typeof cacheExpiration === "number") {
-        header = {
-          ...header,
-          "Cache-Control": "public, max-age=" + cacheExpiration / 1000,
-          Expires: new Date(Date.now() + cacheExpiration).toUTCString()
-        };
-      } else {
-        header = {
-          ...header,
-          Pragma: "no-cache",
-          "Cache-Control": "no-cache",
-          Expires: 0
-        };
-      }
+      // if (typeof cacheExpiration === "number") {
+      //   header = {
+      //     ...header,
+      //     "Cache-Control": "public, max-age=" + cacheExpiration / 1000,
+      //     Expires: new Date(Date.now() + cacheExpiration).toUTCString()
+      //   };
+      // } else {
+      //   header = {
+      //     ...header,
+      //     Pragma: "no-cache",
+      //     "Cache-Control": "no-cache",
+      //     Expires: 0
+      //   };
+      // }
 
       // Now get the object data and stream it
       const response = await s3.send(new GetObjectCommand(params));
@@ -213,5 +212,22 @@ export class ServiceFileStreamS3 {
     params?: ServiceFileStreamS3CreateParams
   ): Promise<MaybeArray<ServiceFileStreamCreateResult>> {
     return this._create(data, params);
+  }
+
+  remove(
+    id: string,
+    params?: ServiceFileStreamS3RemoveParams
+  ): Promise<ServiceFileStreamCreateResult> {
+    return this._remove(id, params);
+  }
+
+  async move(oldId: string, newId: string) {
+    const oldItem = await this._get(oldId);
+    const newItem = await this._create({
+      id: newId,
+      stream: oldItem.stream
+    });
+    await this._remove(oldId);
+    return newItem;
   }
 }

@@ -61,7 +61,7 @@ export class ServiceFileStreamFS {
       // create the directory if it doesn't exist
       const dir = path.dirname(id);
       await fsp.mkdir(path.join(root, dir), { recursive: true });
-      const writeStream = createWriteStream(path.join(root, id), {});
+      const writeStream = createWriteStream(path.join(root, id));
       await streamPomises.pipeline(stream, writeStream);
     });
     await Promise.all(promises);
@@ -142,7 +142,24 @@ export class ServiceFileStreamFS {
     return this._create(data, params);
   }
 
-  remove(id: string, params?: Params) {
+  remove(id: string, params?: Params): Promise<ServiceFileStreamCreateResult> {
     return this._remove(id, params);
+  }
+
+  async move(oldId: string, newId: string) {
+    await this.checkAccess(oldId);
+
+    const { root } = this.options;
+    const oldFile = path.join(root, oldId);
+    const newFile = path.join(root, newId);
+
+    try {
+      await fsp.rename(oldFile, newFile);
+      return { id: newId };
+    } catch (error) {
+      throw new GeneralError(`Could not move file ${oldId} to ${newId}`, {
+        error
+      });
+    }
   }
 }

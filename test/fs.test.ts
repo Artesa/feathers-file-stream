@@ -78,4 +78,32 @@ describe("fs.test.ts", function () {
     expect(result.body).to.be.an("object");
     expect(result.body.id).to.equal(id);
   });
+
+  it("move file", async function () {
+    const buffer = Buffer.from("some data download file");
+    const id = "test-move-file.txt";
+    const filepath = path.join(__dirname, "uploads", id);
+    await fsp.writeFile(filepath, buffer);
+
+    const exists = async (file) =>
+      fsp
+        .access(file)
+        .then(() => true)
+        .catch(() => false);
+
+    expect(await exists(filepath)).to.be.true;
+
+    app.service("uploads").move(id, "test-move-file-2.txt");
+
+    expect(
+      await exists(path.join(__dirname, "uploads", "test-move-file-2.txt"))
+    ).to.be.true;
+    expect(
+      await fsp.readFile(
+        path.join(__dirname, "uploads", "test-move-file-2.txt")
+      )
+    ).to.deep.equal(buffer);
+
+    expect(await exists(filepath)).to.be.false;
+  });
 });
