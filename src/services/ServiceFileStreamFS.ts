@@ -154,6 +154,7 @@ export class ServiceFileStreamFS {
     const newFile = path.join(root, newId);
 
     try {
+      await fsp.mkdir(path.dirname(newFile), { recursive: true });
       await fsp.rename(oldFile, newFile);
       return { id: newId };
     } catch (error) {

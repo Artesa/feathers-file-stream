@@ -84,4 +84,28 @@ describe("fs-nested.test.ts", function () {
     expect(result.body).to.be.an("object");
     expect(result.body.id).to.equal(`test/test/${id}`);
   });
+
+  it("move file", async function () {
+    const buffer = Buffer.from("some data download file");
+    const oldId = "test1/test/test-move-file.txt";
+    const newId = "test2/test/test-move-file-2.txt";
+    const idFolder = (id: string) => path.join(__dirname, "uploads", id);
+    await fsp.mkdir(path.dirname(idFolder(oldId)), { recursive: true });
+    await fsp.writeFile(idFolder(oldId), buffer);
+
+    const exists = async (file) =>
+      fsp
+        .access(file)
+        .then(() => true)
+        .catch(() => false);
+
+    expect(await exists(idFolder(oldId))).to.be.true;
+
+    await app.service("uploads").move(oldId, newId);
+
+    expect(await exists(idFolder(newId))).to.be.true;
+    expect(await fsp.readFile(idFolder(newId))).to.deep.equal(buffer);
+
+    expect(await exists(idFolder(oldId))).to.be.false;
+  });
 });
