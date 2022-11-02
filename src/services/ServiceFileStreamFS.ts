@@ -1,8 +1,8 @@
 import type { Params } from "@feathersjs/feathers";
 import { GeneralError, NotFound } from "@feathersjs/errors";
-import { createReadStream, createWriteStream } from "fs";
-import fsp from "fs/promises";
-import path from "path";
+import { createReadStream, createWriteStream } from "node:fs";
+import fsp from "node:fs/promises";
+import path from "node:path";
 import streamPomises from "stream/promises";
 import type {
   ServiceFileStreamCreateData,

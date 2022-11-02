@@ -7,14 +7,13 @@ import multer from "multer";
 import compress from "compression";
 import cors from "cors";
 import helmet from "helmet";
-import type {
-  MulterFile } from "../src";
+import type { MulterFile } from "../src";
 import {
   expressHandleIncomingStreams,
   expressSendStreamForGet,
   ServiceFileStreamFS
 } from "../src";
-import path from "path";
+import path from "node:path";
 
 import makeFeathersClient from "@feathersjs/feathers";
 import makeRestClient from "@feathersjs/rest-client";

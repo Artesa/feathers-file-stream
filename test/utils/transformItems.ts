@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import type { HookContext } from "@feathersjs/feathers";
 import { alterItems } from "feathers-hooks-common";
 import type { MulterFile } from "../../src";

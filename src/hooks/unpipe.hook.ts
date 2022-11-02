@@ -1,6 +1,6 @@
 import type { HookContext } from "@feathersjs/feathers";
 import { checkContext } from "feathers-hooks-common";
-import { Readable } from "stream";
+import { Readable } from "node:stream";
 import { asArray } from "../utils";
 
 export const unpipe =

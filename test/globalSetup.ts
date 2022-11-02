@@ -1,5 +1,5 @@
-import fsp from "fs/promises";
-import path from "path";
+import fsp from "node:fs/promises";
+import path from "node:path";
 
 export default async function () {
   const unlink = async () => {

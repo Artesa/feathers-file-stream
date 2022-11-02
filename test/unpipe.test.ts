@@ -2,11 +2,11 @@ import supertest from "supertest";
 import { mockFSServer } from "./mockApp";
 import { transformItems } from "./utils";
 import { expect } from "vitest";
-import fsp from "fs/promises";
-import path from "path";
+import fsp from "node:fs/promises";
+import path from "node:path";
 import { FeathersError } from "@feathersjs/errors";
 import { unpipe } from "../src";
-import { Readable } from "stream";
+import { Readable } from "node:stream";
 
 describe("unpipe.test.ts", function () {
   it("unpipe", async function () {

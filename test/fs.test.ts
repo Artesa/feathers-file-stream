@@ -2,8 +2,8 @@ import supertest from "supertest";
 import { mockFSServer } from "./mockApp";
 import { transformItems } from "./utils";
 import { expect } from "vitest";
-import fsp from "fs/promises";
-import path from "path";
+import fsp from "node:fs/promises";
+import path from "node:path";
 
 describe("fs.test.ts", function () {
   let app: Awaited<ReturnType<typeof mockFSServer>>;

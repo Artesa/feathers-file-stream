@@ -6,8 +6,8 @@ import type {
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { GeneralError } from "@feathersjs/errors";
-import type { Readable } from "stream";
-import { PassThrough } from "stream";
+import type { Readable } from "node:stream";
+import { PassThrough } from "node:stream";
 import { Upload } from "@aws-sdk/lib-storage";
 import type {
   ServiceFileStreamCreateData,

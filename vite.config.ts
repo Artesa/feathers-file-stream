@@ -1,7 +1,8 @@
 /// <reference types="vitest" />
-import path from "path";
+import path from "node:path";
 import { defineConfig } from "vite";
 import dts from "vite-plugin-dts";
+import pkg from "./package.json";
 
 export default defineConfig({
   plugins: [
@@ -21,15 +22,7 @@ export default defineConfig({
     rollupOptions: {
       // make sure to externalize deps that shouldn't be bundled
       // into your library
-      external: [
-        "path",
-        "fs",
-        "fs/promises",
-        "stream",
-        "stream/promises",
-        "crypto",
-        "aws-sdk"
-      ],
+      external: [...Object.keys(pkg.dependencies), /^node:/],
       output: {}
     }
   },
