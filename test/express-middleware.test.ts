@@ -1,5 +1,5 @@
 import supertest from "supertest";
-import { mockFSServer } from "./mockApp";
+import { mockFSServer } from "./utils/mockApp";
 import { expect } from "vitest";
 
 describe("express-middleware.test.ts", function () {

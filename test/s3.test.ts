@@ -1,15 +1,28 @@
 import supertest from "supertest";
-import { mockFSServer } from "./utils/mockApp";
+import { mockS3Server } from "./utils/mockS3App";
 import { transformItems } from "./utils";
 import { expect } from "vitest";
-import fsp from "node:fs/promises";
-import path from "node:path";
+import {
+  CreateMultipartUploadCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  S3Client,
+  UploadPartCommand
+} from "@aws-sdk/client-s3";
+import { mockClient } from "aws-sdk-client-mock";
+import { Readable } from "node:stream";
 
-describe("fs.test.ts", function () {
-  let app: Awaited<ReturnType<typeof mockFSServer>>;
+describe("s3.test.ts", function () {
+  let app: Awaited<ReturnType<typeof mockS3Server>>;
+  let mock: ReturnType<typeof mockClient>;
+  let client: S3Client;
 
-  beforeAll(async () => {
-    app = await mockFSServer();
+  beforeEach(async function () {
+    mock = mockClient(S3Client);
+    client = new S3Client({});
+
+    app = await mockS3Server({ s3: client });
 
     const uploadsService = app.service("uploads");
 
@@ -20,11 +33,19 @@ describe("fs.test.ts", function () {
     });
   });
 
+  afterEach(function () {
+    mock.reset();
+  });
+
   it("get throws NotFound for non-existing file", async () => {
+    mock.on(HeadObjectCommand).rejects();
+
     const res = await supertest(app).get("/uploads/does-not-exist").expect(404);
   });
 
   it("remove throws NotFound for non-existing file", async () => {
+    mock.on(HeadObjectCommand).rejects();
+
     const res = await supertest(app)
       .delete("/uploads/does-not-exist")
       .expect(404);
@@ -32,6 +53,9 @@ describe("fs.test.ts", function () {
 
   it("upload file", async function () {
     const buffer = Buffer.from("some data");
+
+    mock.on(CreateMultipartUploadCommand).resolves({ UploadId: "123" });
+    mock.on(UploadPartCommand).resolves({ ETag: "123" });
 
     const { body: uploadResult } = await supertest(app)
       .post("/uploads")
@@ -47,8 +71,14 @@ describe("fs.test.ts", function () {
   it("download file", async function () {
     const buffer = Buffer.from("some data download file");
     const id = "test-download-file.txt";
-    const filepath = path.join(__dirname, "uploads", id);
-    await fsp.writeFile(filepath, buffer);
+
+    mock.on(HeadObjectCommand).resolves({
+      ContentLength: buffer.length,
+      ContentType: "text/plain",
+      ETag: "123",
+      ContentDisposition: `attachment; filename= "${id}"`
+    });
+    mock.on(GetObjectCommand).resolves({ Body: Readable.from(buffer) as any });
 
     const result = await supertest(app)
       .get(`/uploads/${id}`)
@@ -67,16 +97,17 @@ describe("fs.test.ts", function () {
     expect(result.body).to.deep.equal(buffer);
     expect(result.header["content-type"]).to.equal("text/plain; charset=utf-8");
     expect(result.header["content-disposition"]).to.equal(
-      `attachment;filename= "${id}"`
+      `attachment; filename= "${id}"`
     );
     expect(result.header["content-length"]).to.equal(`${buffer.length}`);
   });
 
   it("remove file", async function () {
-    const buffer = Buffer.from("some data download file");
     const id = "test-remove-file.txt";
-    const filepath = path.join(__dirname, "uploads", id);
-    await fsp.writeFile(filepath, buffer);
+
+    mock.on(HeadObjectCommand).resolves({});
+    mock.on(GetObjectCommand).resolves({});
+    mock.on(DeleteObjectCommand).resolves({});
 
     const result = await supertest(app).delete(`/uploads/${id}`).expect(200);
 
@@ -88,22 +119,15 @@ describe("fs.test.ts", function () {
     const buffer = Buffer.from("some data download file");
     const oldId = "test-move-file.txt";
     const newId = "test-move-file-2.txt";
-    const idFolder = (id: string) => path.join(__dirname, "uploads", id);
-    await fsp.writeFile(idFolder(oldId), buffer);
 
-    const exists = async (file) =>
-      fsp
-        .access(file)
-        .then(() => true)
-        .catch(() => false);
+    // download
+    mock.on(HeadObjectCommand).resolves({});
+    mock.on(GetObjectCommand).resolves({ Body: Readable.from(buffer) as any });
 
-    expect(await exists(idFolder(oldId))).to.be.true;
+    // upload
+    mock.on(CreateMultipartUploadCommand).resolves({ UploadId: "123" });
+    mock.on(UploadPartCommand).resolves({ ETag: "123" });
 
     await app.service("uploads").move(oldId, newId);
-
-    expect(await exists(idFolder(newId))).to.be.true;
-    expect(await fsp.readFile(idFolder(newId))).to.deep.equal(buffer);
-
-    expect(await exists(idFolder(oldId))).to.be.false;
   });
 });

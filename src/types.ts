@@ -24,3 +24,24 @@ export type MulterFile = {
   clientReportedMimeType: string;
   clientReportedFileExtension: string;
 };
+
+export interface ServiceFileStream {
+  _get(id: string, params?: any): Promise<ServiceFileStreamGetResult>;
+  get(id: string, params?: any): Promise<ServiceFileStreamGetResult>;
+
+  _create(
+    data: ServiceFileStreamCreateData,
+    params?: any
+  ): Promise<ServiceFileStreamCreateResult>;
+  create(
+    data: ServiceFileStreamCreateData,
+    params?: any
+  ): Promise<ServiceFileStreamCreateResult>;
+
+  _remove(id: string, params?: any): Promise<ServiceFileStreamCreateResult>;
+  remove(id: string, params?: any): Promise<ServiceFileStreamCreateResult>;
+
+  checkExistence(id: string, params?: any): Promise<void>;
+
+  move(oldId: string, newId: string): Promise<ServiceFileStreamCreateResult>;
+}

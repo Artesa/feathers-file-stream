@@ -5,6 +5,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import streamPomises from "node:stream/promises";
 import type {
+  ServiceFileStream,
   ServiceFileStreamCreateData,
   ServiceFileStreamCreateResult,
   ServiceFileStreamGetResult
@@ -17,7 +18,7 @@ export type ServiceFileStreamFSOptions = {
   root: string;
 };
 
-export class ServiceFileStreamFS {
+export class ServiceFileStreamFS implements ServiceFileStream {
   options: ServiceFileStreamFSOptions;
   constructor(options: ServiceFileStreamFSOptions) {
     this.options = options;
@@ -32,10 +33,12 @@ export class ServiceFileStreamFS {
 
     const contentType = mime.lookup(id) || "application/octet-stream";
 
+    const fileName = path.basename(id);
+
     return {
       header: {
         "Content-Type": contentType,
-        "Content-disposition": "attachment;filename=" + id,
+        "Content-disposition": `attachment;filename= "${fileName}"`,
         "Content-Length": info.size
       },
       stream
@@ -81,7 +84,7 @@ export class ServiceFileStreamFS {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _params?: Params
   ): Promise<ServiceFileStreamCreateResult> {
-    await this.checkAccess(id);
+    await this.checkExistence(id);
 
     const { root } = this.options;
     const file = path.join(root, id);
@@ -114,7 +117,7 @@ export class ServiceFileStreamFS {
    * Check if a file exists and throws a NotFound error if it doesn't
    * @param id The filename to check
    */
-  private async checkAccess(id: string) {
+  async checkExistence(id: string) {
     const file = path.join(this.options.root, id);
     try {
       await fsp.access(file);
@@ -147,7 +150,7 @@ export class ServiceFileStreamFS {
   }
 
   async move(oldId: string, newId: string) {
-    await this.checkAccess(oldId);
+    await this.checkExistence(oldId);
 
     const { root } = this.options;
     const oldFile = path.join(root, oldId);

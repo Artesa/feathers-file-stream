@@ -7,7 +7,7 @@ npm i @artesa/feathers-file-stream
 ## Usage with express & multer@next (multer v2) with fs storage
 
 ```ts
-import multer from "multer";
+import multer from "multer"; // multer v2 (!)
 import {
   expressHandleIncomingStreams,
   ServiceFileStreamFS,
@@ -29,7 +29,7 @@ app.use(
 ## Usage with express & multer@next (multer v2) with s3
 
 ```ts
-import multer from "multer";
+import multer from "multer"; // multer v2 (!)
 import { S3Client } from "@aws-sdk/client-s3";
 import {
   expressHandleIncomingStreams,

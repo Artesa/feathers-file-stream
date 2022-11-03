@@ -7,19 +7,19 @@ import multer from "multer";
 import compress from "compression";
 import cors from "cors";
 import helmet from "helmet";
-import type { MulterFile } from "../src";
+import type { MulterFile } from "../../src";
 import {
   expressHandleIncomingStreams,
   expressSendStreamForGet,
   ServiceFileStreamFS
-} from "../src";
+} from "../../src";
 import path from "node:path";
 
 import makeFeathersClient from "@feathersjs/feathers";
 import makeRestClient from "@feathersjs/rest-client";
 import fetch from "node-fetch";
 
-type ServicesFS = {
+type Services = {
   uploads: ServiceFileStreamFS & ServiceAddons<any>;
 };
 
@@ -28,7 +28,7 @@ type MockFSServerOptions = {
 };
 
 export const mockFSServer = async (options?: MockFSServerOptions) => {
-  const app = express<ServicesFS>(feathers());
+  const app = express<Services>(feathers());
 
   app.use(helmet());
   app.use(cors());
@@ -57,7 +57,7 @@ export const mockFSServer = async (options?: MockFSServerOptions) => {
       transform: options?.transformItems
     }),
     new ServiceFileStreamFS({
-      root: path.join(__dirname, "uploads")
+      root: path.join(__dirname, "../", "uploads")
     }),
     expressSendStreamForGet()
   );

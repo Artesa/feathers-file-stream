@@ -1,21 +1,24 @@
 import type {
   DeleteObjectCommandInput,
+  HeadObjectCommandOutput,
   PutObjectCommandInput,
   S3Client
 } from "@aws-sdk/client-s3";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
-import { GeneralError } from "@feathersjs/errors";
+import { GeneralError, NotFound } from "@feathersjs/errors";
 import type { Readable } from "node:stream";
 import { PassThrough } from "node:stream";
-import { Upload } from "@aws-sdk/lib-storage";
+import { Options as UploadOptions, Upload } from "@aws-sdk/lib-storage";
 import type {
+  ServiceFileStream,
   ServiceFileStreamCreateData,
   ServiceFileStreamCreateResult,
   ServiceFileStreamGetResult
 } from "../types";
 import type { MaybeArray } from "../utility-types";
 import { asArray } from "../utils";
+import path from "node:path";
 
 export type ServiceFileStreamS3Options = {
   s3: S3Client;
@@ -40,14 +43,14 @@ export type ServiceFileStreamS3CreateParams = {
 };
 
 export type ServiceFileStreamS3RemoveParams = {
-  s3: {
+  s3?: {
     bucket?: string;
     options: DeleteObjectCommandInput;
   };
   [key: string]: any;
 };
 
-export class ServiceFileStreamS3 {
+export class ServiceFileStreamS3 implements ServiceFileStream {
   s3: S3Client;
   bucket: string;
   options: ServiceFileStreamS3Options;
@@ -77,10 +80,13 @@ export class ServiceFileStreamS3 {
       const { stream, id, ...options } = item;
       const passThroughStream = new PassThrough();
 
-      const defaultParams = {
+      const fileName = path.basename(id);
+
+      const defaultParams: PutObjectCommandInput = {
         Bucket: bucket,
         Key: id,
-        Body: passThroughStream
+        Body: passThroughStream,
+        ContentDisposition: `attachment; filename="${fileName}"`
       };
 
       try {
@@ -111,6 +117,7 @@ export class ServiceFileStreamS3 {
     id: string,
     params?: ServiceFileStreamS3GetParams
   ): Promise<ServiceFileStreamS3GetResult> {
+    const headResponse = await this.getHeadForObject(id, params);
     const bucket = params?.bucket || this.bucket;
     try {
       const { s3 } = this;
@@ -119,13 +126,10 @@ export class ServiceFileStreamS3 {
         Key: id
       };
 
-      // Head the object to get classic the bare minimum http-headers information
-      const headResponse = await s3.send(new HeadObjectCommand(params));
-      let header = {};
-      header = {
-        ...header,
+      const header = {
         "Content-Length": headResponse.ContentLength,
         "Content-Type": headResponse.ContentType,
+        "Content-Disposition": headResponse.ContentDisposition,
         ETag: headResponse.ETag
       };
 
@@ -161,7 +165,6 @@ export class ServiceFileStreamS3 {
         stream
       };
     } catch (err) {
-      console.log("Error", err);
       throw new GeneralError("Error getting file", {
         error: err
       });
@@ -172,9 +175,10 @@ export class ServiceFileStreamS3 {
     id: string,
     params?: ServiceFileStreamS3RemoveParams
   ): Promise<ServiceFileStreamCreateResult> {
-    const bucket = params?.s3.bucket || this.bucket;
+    await this.checkExistence(id, params);
+    const bucket = params?.s3?.bucket || this.bucket;
 
-    const options = params?.s3.options || {};
+    const options = params?.s3?.options || {};
 
     try {
       const result = await this.s3.send(
@@ -189,6 +193,7 @@ export class ServiceFileStreamS3 {
         id
       };
     } catch (error) {
+      console.log(error);
       throw new GeneralError("Error deleting file", {
         error
       });
@@ -219,6 +224,34 @@ export class ServiceFileStreamS3 {
     params?: ServiceFileStreamS3RemoveParams
   ): Promise<ServiceFileStreamCreateResult> {
     return this._remove(id, params);
+  }
+
+  async getHeadForObject(
+    id: string,
+    params?: any
+  ): Promise<HeadObjectCommandOutput> {
+    const bucket = params?.bucket || this.bucket;
+    const { s3 } = this;
+
+    try {
+      return await s3.send(
+        new HeadObjectCommand({
+          Bucket: bucket,
+          Key: id
+        })
+      );
+    } catch (err) {
+      throw new NotFound("File not found", {
+        error: err
+      });
+    }
+  }
+
+  async checkExistence(
+    id: string,
+    params?: ServiceFileStreamS3GetParams
+  ): Promise<void> {
+    await this.getHeadForObject(id, params);
   }
 
   async move(oldId: string, newId: string) {

@@ -1,5 +1,5 @@
 import supertest from "supertest";
-import { mockFSServer } from "./mockApp";
+import { mockFSServer } from "./utils/mockApp";
 import { transformItems, transformItemsNested } from "./utils";
 import { expect } from "vitest";
 import fsp from "node:fs/promises";
