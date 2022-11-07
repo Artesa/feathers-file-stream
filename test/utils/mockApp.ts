@@ -7,7 +7,6 @@ import multer from "multer";
 import compress from "compression";
 import cors from "cors";
 import helmet from "helmet";
-import type { MulterFile } from "../../src";
 import {
   expressHandleIncomingStreams,
   expressSendStreamForGet,
@@ -24,7 +23,7 @@ type Services = {
 };
 
 type MockFSServerOptions = {
-  transformItems: (file: MulterFile, req: any, res: any) => any;
+  transformItems: (file: Express.Multer.File, req: any, res: any) => any;
 };
 
 export const mockFSServer = async (options?: MockFSServerOptions) => {
@@ -46,7 +45,9 @@ export const mockFSServer = async (options?: MockFSServerOptions) => {
 
   app.set("port", port);
 
-  const multerInstance = multer();
+  const multerInstance = multer({
+    dest: path.join(__dirname, "../", "temp-uploads/fs")
+  });
 
   app.use(
     "/uploads",

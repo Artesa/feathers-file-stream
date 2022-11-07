@@ -1,3 +1,4 @@
+import type { ReadStream } from "node:fs";
 import type { Readable } from "node:stream";
 
 export type ServiceFileStreamCreateData = {
@@ -12,17 +13,6 @@ export type ServiceFileStreamCreateResult = {
 export type ServiceFileStreamGetResult = {
   header: Record<string, any>;
   stream: Readable;
-};
-
-export type MulterFile = {
-  fieldName: string;
-  originalName: string;
-  size: number;
-  stream: ReadableStream;
-  detectedMimeType: string | null;
-  detectedFileExtension: string;
-  clientReportedMimeType: string;
-  clientReportedFileExtension: string;
 };
 
 export interface ServiceFileStream {

@@ -1,6 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
-import type { MulterFile, ServiceFileStreamGetResult } from "../types";
+import type { ServiceFileStreamGetResult } from "../types";
 import { asArray, isGetResult } from "../utils";
+import fs from "node:fs";
+import "multer";
 
 export type expressHandleIncomingStreamsOptions<
   REQ,
@@ -9,11 +11,14 @@ export type expressHandleIncomingStreamsOptions<
 > = {
   isArray: boolean;
   field: string;
-  transform?: (file: MulterFile, req: REQ, res: RES) => TR | void;
+  transform?: (file: Express.Multer.File, req: REQ, res: RES) => TR | void;
 };
 
 export const expressHandleIncomingStreams = <
-  REQ extends Request = Request & { files?: MulterFile[]; feathers: any },
+  REQ extends Request = Request & {
+    files?: Express.Multer.File[];
+    feathers: any;
+  },
   RES extends Response = Response,
   RT extends Record<string, any> = Record<string, any>
 >(
@@ -30,7 +35,11 @@ export const expressHandleIncomingStreams = <
       return;
     }
 
-    const { isArray, items } = asArray<MulterFile>(req[field]);
+    const { isArray, items } = asArray<Express.Multer.File>(req[field]);
+
+    items.forEach((file) => {
+      file.stream = fs.createReadStream(file.path);
+    });
 
     const files = options.transform
       ? items.map((file) => {

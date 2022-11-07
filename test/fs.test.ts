@@ -4,6 +4,7 @@ import { transformItems } from "./utils";
 import { expect } from "vitest";
 import fsp from "node:fs/promises";
 import path from "node:path";
+import { unpipe } from "../src";
 
 describe("fs.test.ts", function () {
   let app: Awaited<ReturnType<typeof mockFSServer>>;
@@ -16,6 +17,12 @@ describe("fs.test.ts", function () {
     uploadsService.hooks({
       before: {
         create: [transformItems()]
+      },
+      after: {
+        create: [unpipe({ unlink: "path" })]
+      },
+      error: {
+        create: [unpipe({ unlink: "path" })]
       }
     });
   });

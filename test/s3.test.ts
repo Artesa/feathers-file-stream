@@ -12,6 +12,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { mockClient } from "aws-sdk-client-mock";
 import { Readable } from "node:stream";
+import { unpipe } from "../src";
 
 describe("s3.test.ts", function () {
   let app: Awaited<ReturnType<typeof mockS3Server>>;
@@ -29,6 +30,12 @@ describe("s3.test.ts", function () {
     uploadsService.hooks({
       before: {
         create: [transformItems()]
+      },
+      after: {
+        create: [unpipe({ unlink: "path" })]
+      },
+      error: {
+        create: [unpipe({ unlink: "path" })]
       }
     });
   });

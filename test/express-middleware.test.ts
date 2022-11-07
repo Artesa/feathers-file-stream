@@ -1,6 +1,7 @@
 import supertest from "supertest";
 import { mockFSServer } from "./utils/mockApp";
 import { expect } from "vitest";
+import { unpipe } from "../src";
 
 describe("express-middleware.test.ts", function () {
   it("upload file", async function () {
@@ -22,7 +23,7 @@ describe("express-middleware.test.ts", function () {
     uploadsService.hooks({
       before: {
         create: [
-          (context) => {
+          async (context) => {
             const { data } = context;
 
             expect(data).to.be.an("array");
@@ -39,6 +40,12 @@ describe("express-middleware.test.ts", function () {
             throw new Error("");
           }
         ]
+      },
+      after: {
+        create: [unpipe({ unlink: "path" })]
+      },
+      error: {
+        create: [unpipe({ unlink: "path" })]
       }
     });
 

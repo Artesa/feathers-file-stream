@@ -5,6 +5,7 @@ import { expect } from "vitest";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import type { HookContext } from "@feathersjs/feathers";
+import { unpipe } from "../src";
 
 describe("fs-nested.test.ts", function () {
   let app: Awaited<ReturnType<typeof mockFSServer>>;
@@ -31,6 +32,12 @@ describe("fs-nested.test.ts", function () {
             return context;
           }
         ]
+      },
+      after: {
+        create: [unpipe({ unlink: "path" })]
+      },
+      error: {
+        create: [unpipe({ unlink: "path" })]
       }
     });
   });

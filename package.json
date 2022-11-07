@@ -81,7 +81,7 @@
     "eslint-plugin-unicorn": "^44.0.2",
     "get-port": "^5.1.1",
     "helmet": "^6.0.0",
-    "multer": "^2.0.0-rc.4",
+    "multer": "^1.4.5-lts.1",
     "node-fetch": "^3.2.10",
     "np": "^7.6.2",
     "nyc": "^15.1.0",
