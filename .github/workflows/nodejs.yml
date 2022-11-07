@@ -31,4 +31,4 @@ jobs:
         with:
           node-version: 16.x
       - run: npm ci
-      - run: npm build
+      - run: npm run build
