@@ -38,8 +38,8 @@
     "vite.config.ts"
   ],
   "scripts": {
-    "compile": "shx rm -rf dist/ && vite build",
-    "version": "npm run compile",
+    "build": "shx rm -rf dist/ && vite build",
+    "version": "npm run build",
     "release": "np",
     "mocha": "cross-env NODE_ENV=test TS_NODE_PROJECT='tsconfig.test.json' mocha --timeout 5000",
     "test": "vitest run",
@@ -54,7 +54,8 @@
     "@feathersjs/feathers": "^4.5.15",
     "express": "^4.18.2",
     "feathers-hooks-common": "^6.1.5",
-    "mime-types": "^2.1.35"
+    "mime-types": "^2.1.35",
+    "multer": "^1.4.5-lts.1"
   },
   "devDependencies": {
     "@feathersjs/client": "^4.5.15",
@@ -81,7 +82,6 @@
     "eslint-plugin-unicorn": "^44.0.2",
     "get-port": "^5.1.1",
     "helmet": "^6.0.0",
-    "multer": "^1.4.5-lts.1",
     "node-fetch": "^3.2.10",
     "np": "^7.6.2",
     "nyc": "^15.1.0",
