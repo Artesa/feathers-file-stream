@@ -25,12 +25,10 @@ export const unpipe =
 
       const promises = items.map(async (item) => {
         const { stream } = item;
-        if (!(stream instanceof Readable)) {
-          return;
+        if (stream instanceof Readable) {
+          stream.unpipe();
+          stream.destroy();
         }
-
-        stream.unpipe();
-        stream.destroy();
 
         if (options?.unlink && typeof item[options.unlink] === "string") {
           const path = item[options.unlink];
