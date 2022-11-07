@@ -5,9 +5,15 @@ import { asArray } from "../utils";
 import fsp from "node:fs/promises";
 
 export type HookUnpipeOptions = {
+  /** The name of the property that contains the filepath to unlink. */
   unlink?: string;
 };
 
+/**
+ * Unpipes a stream from a readable stream. A file can be unlinked if the unlink option is set to the property of the file path.
+ * @param options
+ * @returns
+ */
 export const unpipe =
   (options?: HookUnpipeOptions) =>
     async <H extends HookContext>(context: H) => {
