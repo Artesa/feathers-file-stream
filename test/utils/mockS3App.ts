@@ -7,13 +7,13 @@ import multer from "multer";
 import compress from "compression";
 import cors from "cors";
 import helmet from "helmet";
-import type { MulterFile } from "../../src";
 import {
   expressSendStreamForGet,
   expressHandleIncomingStreams,
   ServiceFileStreamS3
 } from "../../src";
 import type { S3Client } from "@aws-sdk/client-s3";
+import path from "node:path";
 
 type Services = {
   uploads: ServiceFileStreamS3 & ServiceAddons<any>;
@@ -21,7 +21,7 @@ type Services = {
 
 type MockFSServerOptions = {
   s3: S3Client;
-  transformItems?: (file: MulterFile, req: any, res: any) => any;
+  transformItems?: (file: Express.Multer.File, req: any, res: any) => any;
 };
 
 export const mockS3Server = async (options: MockFSServerOptions) => {
@@ -43,7 +43,9 @@ export const mockS3Server = async (options: MockFSServerOptions) => {
 
   app.set("port", port);
 
-  const multerInstance = multer();
+  const multerInstance = multer({
+    dest: path.join(__dirname, "../", "temp-uploads/s3")
+  });
 
   app.use(
     "/uploads",

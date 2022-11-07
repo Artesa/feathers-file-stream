@@ -36,7 +36,7 @@ describe("unpipe.test.ts", function () {
 
             throwHookRun = true;
           },
-          unpipe(),
+          unpipe({ unlink: "path" }),
           (context) => {
             checkErrorRun = true;
             const isDestroyed = context.data[0].stream.destroyed;

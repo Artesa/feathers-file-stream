@@ -1,22 +1,17 @@
 import crypto from "node:crypto";
 import type { HookContext } from "@feathersjs/feathers";
 import { alterItems } from "feathers-hooks-common";
-import type { MulterFile } from "../../src";
+import "multer";
+import path from "node:path";
 
 export const transformItems =
   () =>
   <H extends HookContext>(context: H) => {
-    return alterItems((item: MulterFile) => {
+    return alterItems((item: Express.Multer.File) => {
       const hash = crypto.randomBytes(16).toString("hex");
-      let ext =
-        item.detectedFileExtension ||
-        item.clientReportedFileExtension ||
-        item.originalName.split(".").pop();
-      if (!ext?.startsWith(".")) {
-        ext = `.${ext}`;
-      }
+      const ext = path.extname(item.filename);
       const id = `${hash}${ext}`;
-      const result: MulterFile & { id: string } = { ...item, id };
+      const result: Express.Multer.File & { id: string } = { ...item, id };
       return result;
     })(context);
   };
@@ -24,17 +19,11 @@ export const transformItems =
 export const transformItemsNested =
   () =>
   <H extends HookContext>(context: H) => {
-    return alterItems((item: MulterFile) => {
+    return alterItems((item: Express.Multer.File) => {
       const hash = crypto.randomBytes(16).toString("hex");
-      let ext =
-        item.detectedFileExtension ||
-        item.clientReportedFileExtension ||
-        item.originalName.split(".").pop();
-      if (!ext?.startsWith(".")) {
-        ext = `.${ext}`;
-      }
+      const ext = path.extname(item.filename);
       const id = `test/test/${hash}${ext}`;
-      const result: MulterFile & { id: string } = { ...item, id };
+      const result: Express.Multer.File & { id: string } = { ...item, id };
       return result;
     })(context);
   };
