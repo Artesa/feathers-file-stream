@@ -9,6 +9,7 @@ import cors from "cors";
 import helmet from "helmet";
 import {
   expressHandleIncomingStreams,
+  expressHandleMulterError,
   expressSendStreamForGet,
   ServiceFileStreamFS
 } from "../../src";
@@ -46,12 +47,16 @@ export const mockFSServer = async (options?: MockFSServerOptions) => {
   app.set("port", port);
 
   const multerInstance = multer({
-    dest: path.join(__dirname, "../", "temp-uploads/fs")
+    dest: path.join(__dirname, "../", "temp-uploads/fs"),
+    limits: {
+      fileSize: 1e6 * 1 // 1MB
+    }
   });
 
   app.use(
     "/uploads",
     multerInstance.array("files"),
+    expressHandleMulterError(),
     expressHandleIncomingStreams({
       field: "files",
       isArray: true,

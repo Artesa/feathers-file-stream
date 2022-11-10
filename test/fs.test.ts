@@ -37,21 +37,35 @@ describe("fs.test.ts", function () {
       .expect(404);
   });
 
-  it("upload file", async function () {
-    const buffer = Buffer.from("some data");
+  describe("upload", () => {
+    it("throws appropriate error for big file", async function () {
+      const buffer = Buffer.from("a".repeat(1e6 * 5)); // 5MB
 
-    const { body: uploadResult } = await supertest(app)
-      .post("/uploads")
-      .attach("files", buffer, "test.txt")
-      .expect(201);
+      const result = await supertest(app)
+        .post("/uploads")
+        .attach("files", buffer, "test.txt")
+        .expect(400);
 
-    expect(uploadResult).to.be.an("array");
-    expect(uploadResult.length).to.equal(1);
-    expect(uploadResult[0]).to.be.an("object");
-    expect(uploadResult[0].id).to.be.a("string");
+      expect(result.body.name).toBe("BadRequest");
+      expect(result.body.message).toBe("File too large");
+    });
+
+    it("uploads file", async function () {
+      const buffer = Buffer.from("some data");
+
+      const { body: uploadResult } = await supertest(app)
+        .post("/uploads")
+        .attach("files", buffer, "test.txt")
+        .expect(201);
+
+      expect(uploadResult).to.be.an("array");
+      expect(uploadResult.length).to.equal(1);
+      expect(uploadResult[0]).to.be.an("object");
+      expect(uploadResult[0].id).to.be.a("string");
+    });
   });
 
-  it("download file", async function () {
+  it("downloads file", async function () {
     const buffer = Buffer.from("some data download file");
     const id = "test-download-file.txt";
     const filepath = path.join(__dirname, "uploads", id);
@@ -79,7 +93,7 @@ describe("fs.test.ts", function () {
     expect(result.header["content-length"]).to.equal(`${buffer.length}`);
   });
 
-  it("remove file", async function () {
+  it("removes file", async function () {
     const buffer = Buffer.from("some data download file");
     const id = "test-remove-file.txt";
     const filepath = path.join(__dirname, "uploads", id);
@@ -91,7 +105,7 @@ describe("fs.test.ts", function () {
     expect(result.body.id).to.equal(id);
   });
 
-  it("move file", async function () {
+  it("moves file", async function () {
     const buffer = Buffer.from("some data download file");
     const oldId = "test-move-file.txt";
     const newId = "test-move-file-2.txt";
