@@ -15,7 +15,6 @@ import {
 } from "../../src";
 import path from "node:path";
 
-import makeFeathersClient from "@feathersjs/feathers";
 import makeRestClient from "@feathersjs/rest-client";
 import fetch from "node-fetch";
 
@@ -83,7 +82,7 @@ export const mockFSServer = async (options?: MockFSServerOptions) => {
 export const mockClient = (app: Application) => {
   const port = app.get("port");
 
-  const client = makeFeathersClient();
+  const client = feathers();
 
   // Connect to a different URL
   const restClient = makeRestClient(`http://localhost:${port}`);

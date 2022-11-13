@@ -5,7 +5,7 @@
     "mocha": true
   },
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint", "unicorn", "prettier"],
+  "plugins": ["@typescript-eslint", "unicorn", "import", "prettier"],
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
@@ -35,7 +35,8 @@
       "warn",
       { "prefer": "type-imports" }
     ],
-    "unicorn/prefer-node-protocol": ["warn"]
+    "unicorn/prefer-node-protocol": ["warn"],
+    "import/no-duplicates": "warn"
   },
   "overrides": [
     {

@@ -4,8 +4,9 @@ import type {
   PutObjectCommandInput,
   S3Client
 } from "@aws-sdk/client-s3";
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import {
+  DeleteObjectCommand,
+  CopyObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand
@@ -21,21 +22,10 @@ import type {
 } from "../types";
 import type { MaybeArray } from "../utility-types";
 import { asArray } from "../utils";
-import path from "node:path";
 
 export type ServiceFileStreamS3Options = {
   s3: S3Client;
   bucket: string;
-  // upload?: {
-  //   /**
-  //    * @default 4
-  //    */
-  //   queueSize?: number;
-  //   /**
-  //    * @default 5 * 1024 * 1024 '(5 MB)'
-  //    */
-  //   partSize?: number;
-  // };
 };
 
 export type ServiceFileStreamS3GetParams = {
@@ -91,9 +81,6 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
 
     const bucket = params?.bucket || this.bucket;
 
-    // const queueSize = this.options.upload?.queueSize || 4;
-    // const partSize = this.options.upload?.partSize || 5 * 1024 * 1024;
-
     const promises = items.map(async (item) => {
       const { stream, id, ...options } = item;
 
@@ -113,23 +100,6 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
 
       try {
         await this.s3.send(new PutObjectCommand(putObjectInput));
-
-        // const parallelUploads3 = new Upload({
-        //   client: this.s3,
-        //   params: putObjectInput,
-        //   queueSize,
-        //   partSize,
-        //   leavePartsOnError: false
-        // });
-
-        // parallelUploads3.on("httpUploadProgress", (progress) => {
-        //   console.log(progress);
-        // });
-
-        // stream.pipe(passThroughStream);
-        // await parallelUploads3.done();
-
-        console.log("done");
       } catch (err) {
         this.errorHandler(err);
       }
@@ -170,29 +140,6 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
         header["Content-Encoding"] = headResponse.ContentEncoding;
       }
 
-      // Get the object taggings (optional)
-      // if (streamTags === true) {
-      //     const taggingResponse = await s3.send(new GetObjectTaggingCommand(params));
-      //     taggingResponse.TagSet.forEach((tag) => {
-      //         header[`X-TAG-${tag.Key}`] = tag.Value;
-      //     });
-      // }
-      // Prepare cache headers
-      // if (typeof cacheExpiration === "number") {
-      //   header = {
-      //     ...header,
-      //     "Cache-Control": "public, max-age=" + cacheExpiration / 1000,
-      //     Expires: new Date(Date.now() + cacheExpiration).toUTCString()
-      //   };
-      // } else {
-      //   header = {
-      //     ...header,
-      //     Pragma: "no-cache",
-      //     "Cache-Control": "no-cache",
-      //     Expires: 0
-      //   };
-      // }
-
       // Now get the object data and stream it
       const response = await s3.send(new GetObjectCommand(params));
       const stream = response.Body as Readable;
@@ -216,7 +163,7 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
     const options = params?.s3?.options || {};
 
     try {
-      const result = await this.s3.send(
+      await this.s3.send(
         new DeleteObjectCommand({
           ...options,
           Bucket: bucket,
@@ -248,6 +195,7 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
     data: MaybeArray<ServiceFileStreamS3CreateData>,
     params?: ServiceFileStreamS3CreateParams
   ): Promise<MaybeArray<ServiceFileStreamCreateResult>> {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     return this._create(data, params);
   }
@@ -289,20 +237,30 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
 
   async move(oldId: string, newId: string) {
     try {
-      const oldItem = await this._get(oldId);
-      const newItem = await this._create({
-        id: newId,
-        stream: oldItem.stream
-      });
-      await this._remove(oldId);
-      return newItem;
+      await this.s3.send(
+        new CopyObjectCommand({
+          Bucket: this.bucket,
+          CopySource: `${this.bucket}/${oldId}`,
+          Key: newId
+        })
+      );
+
+      await this.s3.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: oldId
+        })
+      );
+
+      return {
+        id: newId
+      };
     } catch (err) {
       this.errorHandler(err);
     }
   }
 
   errorHandler(err) {
-    console.log(err);
     if (!err) return;
 
     if (err instanceof FeathersError) {

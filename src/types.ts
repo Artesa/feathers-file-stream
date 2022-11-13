@@ -1,4 +1,3 @@
-import type { ReadStream } from "node:fs";
 import type { Readable } from "node:stream";
 
 export type ServiceFileStreamCreateData = {
