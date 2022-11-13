@@ -1,14 +1,22 @@
 import supertest from "supertest";
 import { transformItems } from "./utils";
 import { expect } from "vitest";
-import fsp from "node:fs/promises";
-import path from "node:path";
 import { unpipe } from "../src";
 import { mockMinIOServer } from "./utils/mockApp.minio";
 import { Client } from "minio";
 import type { AddressInfo } from "node:net";
 import S3rver from "s3rver";
 import getPort from "get-port";
+
+const upload = async (app) => {
+  const buffer = Buffer.from("some data");
+
+  const { body: uploadResult } = await supertest(app)
+    .post("/uploads")
+    .attach("files", buffer, "testdownload.txt");
+
+  return uploadResult[0];
+};
 
 describe("minio.test.ts", function () {
   let app: Awaited<ReturnType<typeof mockMinIOServer>>;
@@ -139,10 +147,9 @@ describe("minio.test.ts", function () {
   });
 
   it("removes file", async function () {
-    const buffer = Buffer.from("some data download file");
-    const id = "test-remove-file.txt";
-    const filepath = path.join(__dirname, "uploads", id);
-    await fsp.writeFile(filepath, buffer);
+    const uploadResult = await upload(app);
+
+    const { id } = uploadResult;
 
     const result = await supertest(app).delete(`/uploads/${id}`).expect(200);
 
@@ -151,13 +158,9 @@ describe("minio.test.ts", function () {
   });
 
   it("moves file", async function () {
-    const buffer = Buffer.from("some data");
+    const uploadResult = await upload(app);
 
-    const { body: uploadResult } = await supertest(app)
-      .post("/uploads")
-      .attach("files", buffer, "testmove.txt");
-
-    const { id } = uploadResult[0];
+    const { id } = uploadResult;
 
     await app.service("uploads").move(id, `${id}-moved`);
   });
