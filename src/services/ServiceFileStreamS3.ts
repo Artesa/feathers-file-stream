@@ -45,7 +45,9 @@ export type ServiceFileStreamS3GetResult = ServiceFileStreamGetResult;
 export type ServiceFileStreamS3CreateData = Partial<
   Omit<PutObjectCommandInput, "Body">
 > &
-  ServiceFileStreamCreateData;
+  ServiceFileStreamCreateData & {
+    size?: number;
+  };
 
 export type ServiceFileStreamS3CreateParams = {
   bucket?: string;
@@ -95,19 +97,21 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
 
       // const fileName = path.basename(id);
 
-      const defaultParams: PutObjectCommandInput = {
+      const putObjectInput: PutObjectCommandInput = {
         Bucket: bucket,
         Key: id,
-        Body: passThroughStream
+        Body: passThroughStream,
+        ...options
       };
+
+      if (item.size) {
+        putObjectInput.ContentLength = item.size;
+      }
 
       try {
         const parallelUploads3 = new Upload({
           client: this.s3,
-          params: {
-            ...defaultParams,
-            ...options
-          },
+          params: putObjectInput,
           queueSize,
           partSize,
           leavePartsOnError: false
@@ -119,6 +123,8 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
 
         stream.pipe(passThroughStream);
         await parallelUploads3.done();
+
+        console.log("done");
       } catch (err) {
         this.errorHandler(err);
       }

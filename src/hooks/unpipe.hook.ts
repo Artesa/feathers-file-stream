@@ -25,6 +25,7 @@ export const unpipe =
 
       const promises = items.map(async (item) => {
         const { stream } = item;
+        console.log("unpipe");
         if (stream instanceof Readable) {
           stream.unpipe();
           stream.destroy();
@@ -36,6 +37,8 @@ export const unpipe =
           // eslint-disable-next-line @typescript-eslint/no-empty-function
           await fsp.unlink(path).catch(() => {});
         }
+
+        console.log("unlinked");
       });
 
       await Promise.all(promises);
