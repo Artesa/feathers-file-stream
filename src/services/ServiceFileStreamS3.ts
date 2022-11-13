@@ -100,13 +100,10 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
       const passThroughStream = new PassThrough();
       stream.pipe(passThroughStream);
 
-      const fileName = path.basename(id);
-
       const putObjectInput: PutObjectCommandInput = {
         Bucket: bucket,
         Key: id,
         Body: passThroughStream,
-        ContentDisposition: `attachment; filename= ${fileName}`,
         ...options
       };
 
@@ -157,7 +154,8 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
       };
 
       const header: Record<string, any> = {
-        ETag: headResponse.ETag
+        ETag: headResponse.ETag,
+        "Content-Disposition": "inline"
       };
 
       if (headResponse.ContentLength) {
@@ -166,10 +164,6 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
 
       if (headResponse.ContentType) {
         header["Content-Type"] = headResponse.ContentType;
-      }
-
-      if (headResponse.ContentDisposition) {
-        header["Content-Disposition"] = headResponse.ContentDisposition;
       }
 
       if (headResponse.ContentEncoding) {
