@@ -6,10 +6,10 @@ import type {
 } from "@aws-sdk/client-s3";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
-import { GeneralError, NotFound } from "@feathersjs/errors";
+import { FeathersError, GeneralError, NotFound } from "@feathersjs/errors";
 import type { Readable } from "node:stream";
 import { PassThrough } from "node:stream";
-import { Options as UploadOptions, Upload } from "@aws-sdk/lib-storage";
+import { Upload } from "@aws-sdk/lib-storage";
 import type {
   ServiceFileStream,
   ServiceFileStreamCreateData,
@@ -23,6 +23,16 @@ import path from "node:path";
 export type ServiceFileStreamS3Options = {
   s3: S3Client;
   bucket: string;
+  upload?: {
+    /**
+     * @default 4
+     */
+    queueSize?: number;
+    /**
+     * @default 5 * 1024 * 1024 '(5 MB)'
+     */
+    partSize?: number;
+  };
 };
 
 export type ServiceFileStreamS3GetParams = {
@@ -76,6 +86,9 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
 
     const bucket = params?.bucket || this.bucket;
 
+    const queueSize = this.options.upload?.queueSize || 4;
+    const partSize = this.options.upload?.partSize || 5 * 1024 * 1024;
+
     const promises = items.map(async (item) => {
       const { stream, id, ...options } = item;
       const passThroughStream = new PassThrough();
@@ -96,15 +109,19 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
             ...defaultParams,
             ...options
           },
-          queueSize: 4,
-          partSize: 1024 * 1024 * 5,
+          queueSize,
+          partSize,
           leavePartsOnError: false
+        });
+
+        parallelUploads3.on("httpUploadProgress", (progress) => {
+          console.log(progress);
         });
 
         stream.pipe(passThroughStream);
         await parallelUploads3.done();
-      } catch (e) {
-        console.log(e);
+      } catch (err) {
+        this.errorHandler(err);
       }
     });
 
@@ -165,9 +182,7 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
         stream
       };
     } catch (err) {
-      throw new GeneralError("Error getting file", {
-        error: err
-      });
+      this.errorHandler(err);
     }
   }
 
@@ -192,11 +207,8 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
       return {
         id
       };
-    } catch (error) {
-      console.log(error);
-      throw new GeneralError("Error deleting file", {
-        error
-      });
+    } catch (err) {
+      this.errorHandler(err);
     }
   }
 
@@ -255,12 +267,29 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
   }
 
   async move(oldId: string, newId: string) {
-    const oldItem = await this._get(oldId);
-    const newItem = await this._create({
-      id: newId,
-      stream: oldItem.stream
+    try {
+      const oldItem = await this._get(oldId);
+      const newItem = await this._create({
+        id: newId,
+        stream: oldItem.stream
+      });
+      await this._remove(oldId);
+      return newItem;
+    } catch (err) {
+      this.errorHandler(err);
+    }
+  }
+
+  errorHandler(err) {
+    console.log(err);
+    if (!err) return;
+
+    if (err instanceof FeathersError) {
+      throw err;
+    }
+
+    throw new GeneralError("Error", {
+      error: err
     });
-    await this._remove(oldId);
-    return newItem;
   }
 }
