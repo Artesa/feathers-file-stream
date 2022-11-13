@@ -47,6 +47,7 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "dependencies": {
+    "@aws-sdk/abort-controller": "^3.208.0",
     "@aws-sdk/client-s3": "^3.209.0",
     "@aws-sdk/lib-storage": "^3.209.0",
     "@feathersjs/errors": "^4.5.15",
@@ -87,6 +88,7 @@
     "node-fetch": "^3.3.0",
     "np": "^7.6.2",
     "nyc": "^15.1.0",
+    "prettier": "^2.7.1",
     "s3rver": "^3.7.1",
     "shx": "^0.3.4",
     "supertest": "^6.3.1",
