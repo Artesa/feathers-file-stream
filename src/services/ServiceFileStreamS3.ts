@@ -5,7 +5,11 @@ import type {
   S3Client
 } from "@aws-sdk/client-s3";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand
+} from "@aws-sdk/client-s3";
 import { FeathersError, GeneralError, NotFound } from "@feathersjs/errors";
 import type { Readable } from "node:stream";
 import { PassThrough } from "node:stream";
@@ -18,21 +22,20 @@ import type {
 } from "../types";
 import type { MaybeArray } from "../utility-types";
 import { asArray } from "../utils";
-import path from "node:path";
 
 export type ServiceFileStreamS3Options = {
   s3: S3Client;
   bucket: string;
-  upload?: {
-    /**
-     * @default 4
-     */
-    queueSize?: number;
-    /**
-     * @default 5 * 1024 * 1024 '(5 MB)'
-     */
-    partSize?: number;
-  };
+  // upload?: {
+  //   /**
+  //    * @default 4
+  //    */
+  //   queueSize?: number;
+  //   /**
+  //    * @default 5 * 1024 * 1024 '(5 MB)'
+  //    */
+  //   partSize?: number;
+  // };
 };
 
 export type ServiceFileStreamS3GetParams = {
@@ -88,12 +91,14 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
 
     const bucket = params?.bucket || this.bucket;
 
-    const queueSize = this.options.upload?.queueSize || 4;
-    const partSize = this.options.upload?.partSize || 5 * 1024 * 1024;
+    // const queueSize = this.options.upload?.queueSize || 4;
+    // const partSize = this.options.upload?.partSize || 5 * 1024 * 1024;
 
     const promises = items.map(async (item) => {
       const { stream, id, ...options } = item;
+
       const passThroughStream = new PassThrough();
+      stream.pipe(passThroughStream);
 
       // const fileName = path.basename(id);
 
@@ -109,20 +114,22 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
       }
 
       try {
-        const parallelUploads3 = new Upload({
-          client: this.s3,
-          params: putObjectInput,
-          queueSize,
-          partSize,
-          leavePartsOnError: false
-        });
+        await this.s3.send(new PutObjectCommand(putObjectInput));
 
-        parallelUploads3.on("httpUploadProgress", (progress) => {
-          console.log(progress);
-        });
+        // const parallelUploads3 = new Upload({
+        //   client: this.s3,
+        //   params: putObjectInput,
+        //   queueSize,
+        //   partSize,
+        //   leavePartsOnError: false
+        // });
 
-        stream.pipe(passThroughStream);
-        await parallelUploads3.done();
+        // parallelUploads3.on("httpUploadProgress", (progress) => {
+        //   console.log(progress);
+        // });
+
+        // stream.pipe(passThroughStream);
+        // await parallelUploads3.done();
 
         console.log("done");
       } catch (err) {
@@ -246,6 +253,7 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
     data: MaybeArray<ServiceFileStreamS3CreateData>,
     params?: ServiceFileStreamS3CreateParams
   ): Promise<MaybeArray<ServiceFileStreamCreateResult>> {
+    // @ts-ignore
     return this._create(data, params);
   }
 
