@@ -2,11 +2,12 @@
   "root": true,
   "env": {
     "node": true,
-    "mocha": true
+    "vitest-globals/env": true
   },
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint", "unicorn", "prettier"],
   "extends": [
+    "plugin:vitest-globals/recommended",
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "prettier"

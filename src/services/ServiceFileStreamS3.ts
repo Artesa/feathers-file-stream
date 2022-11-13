@@ -9,7 +9,7 @@ import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { GeneralError, NotFound } from "@feathersjs/errors";
 import type { Readable } from "node:stream";
 import { PassThrough } from "node:stream";
-import { Options as UploadOptions, Upload } from "@aws-sdk/lib-storage";
+import { Upload } from "@aws-sdk/lib-storage";
 import type {
   ServiceFileStream,
   ServiceFileStreamCreateData,

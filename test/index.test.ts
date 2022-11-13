@@ -6,12 +6,14 @@ describe("index.test.ts", function () {
     // services
     expect(src.ServiceFileStreamFS).to.be.a("function");
     expect(src.ServiceFileStreamS3).to.be.a("function");
+    expect(src.ServiceFileStreamMinIO).to.be.a("function");
 
     // hooks
     expect(src.unpipe).to.be.a("function");
 
     // middleware
     expect(src.expressHandleIncomingStreams).to.be.a("function");
+    expect(src.expressHandleMulterError).to.be.a("function");
     expect(src.expressSendStreamForGet).to.be.a("function");
   });
 });
