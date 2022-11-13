@@ -5,8 +5,12 @@ import type {
   S3Client
 } from "@aws-sdk/client-s3";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
-import { GeneralError, NotFound } from "@feathersjs/errors";
+import {
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand
+} from "@aws-sdk/client-s3";
+import { FeathersError, GeneralError, NotFound } from "@feathersjs/errors";
 import type { Readable } from "node:stream";
 import { PassThrough } from "node:stream";
 import { Upload } from "@aws-sdk/lib-storage";
@@ -18,11 +22,20 @@ import type {
 } from "../types";
 import type { MaybeArray } from "../utility-types";
 import { asArray } from "../utils";
-import path from "node:path";
 
 export type ServiceFileStreamS3Options = {
   s3: S3Client;
   bucket: string;
+  // upload?: {
+  //   /**
+  //    * @default 4
+  //    */
+  //   queueSize?: number;
+  //   /**
+  //    * @default 5 * 1024 * 1024 '(5 MB)'
+  //    */
+  //   partSize?: number;
+  // };
 };
 
 export type ServiceFileStreamS3GetParams = {
@@ -35,7 +48,9 @@ export type ServiceFileStreamS3GetResult = ServiceFileStreamGetResult;
 export type ServiceFileStreamS3CreateData = Partial<
   Omit<PutObjectCommandInput, "Body">
 > &
-  ServiceFileStreamCreateData;
+  ServiceFileStreamCreateData & {
+    size?: number;
+  };
 
 export type ServiceFileStreamS3CreateParams = {
   bucket?: string;
@@ -76,35 +91,49 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
 
     const bucket = params?.bucket || this.bucket;
 
+    // const queueSize = this.options.upload?.queueSize || 4;
+    // const partSize = this.options.upload?.partSize || 5 * 1024 * 1024;
+
     const promises = items.map(async (item) => {
       const { stream, id, ...options } = item;
+
       const passThroughStream = new PassThrough();
+      stream.pipe(passThroughStream);
 
-      const fileName = path.basename(id);
+      // const fileName = path.basename(id);
 
-      const defaultParams: PutObjectCommandInput = {
+      const putObjectInput: PutObjectCommandInput = {
         Bucket: bucket,
         Key: id,
         Body: passThroughStream,
-        ContentDisposition: `attachment; filename="${fileName}"`
+        ...options
       };
 
-      try {
-        const parallelUploads3 = new Upload({
-          client: this.s3,
-          params: {
-            ...defaultParams,
-            ...options
-          },
-          queueSize: 4,
-          partSize: 1024 * 1024 * 5,
-          leavePartsOnError: false
-        });
+      if (item.size) {
+        putObjectInput.ContentLength = item.size;
+      }
 
-        stream.pipe(passThroughStream);
-        await parallelUploads3.done();
-      } catch (e) {
-        console.log(e);
+      try {
+        await this.s3.send(new PutObjectCommand(putObjectInput));
+
+        // const parallelUploads3 = new Upload({
+        //   client: this.s3,
+        //   params: putObjectInput,
+        //   queueSize,
+        //   partSize,
+        //   leavePartsOnError: false
+        // });
+
+        // parallelUploads3.on("httpUploadProgress", (progress) => {
+        //   console.log(progress);
+        // });
+
+        // stream.pipe(passThroughStream);
+        // await parallelUploads3.done();
+
+        console.log("done");
+      } catch (err) {
+        this.errorHandler(err);
       }
     });
 
@@ -126,12 +155,25 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
         Key: id
       };
 
-      const header = {
-        "Content-Length": headResponse.ContentLength,
-        "Content-Type": headResponse.ContentType,
-        "Content-Disposition": headResponse.ContentDisposition,
+      const header: Record<string, any> = {
         ETag: headResponse.ETag
       };
+
+      if (headResponse.ContentLength) {
+        header["Content-Length"] = headResponse.ContentLength;
+      }
+
+      if (headResponse.ContentType) {
+        header["Content-Type"] = headResponse.ContentType;
+      }
+
+      if (headResponse.ContentDisposition) {
+        header["Content-Disposition"] = headResponse.ContentDisposition;
+      }
+
+      if (headResponse.ContentEncoding) {
+        header["Content-Encoding"] = headResponse.ContentEncoding;
+      }
 
       // Get the object taggings (optional)
       // if (streamTags === true) {
@@ -165,9 +207,7 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
         stream
       };
     } catch (err) {
-      throw new GeneralError("Error getting file", {
-        error: err
-      });
+      this.errorHandler(err);
     }
   }
 
@@ -192,11 +232,8 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
       return {
         id
       };
-    } catch (error) {
-      console.log(error);
-      throw new GeneralError("Error deleting file", {
-        error
-      });
+    } catch (err) {
+      this.errorHandler(err);
     }
   }
 
@@ -216,6 +253,7 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
     data: MaybeArray<ServiceFileStreamS3CreateData>,
     params?: ServiceFileStreamS3CreateParams
   ): Promise<MaybeArray<ServiceFileStreamCreateResult>> {
+    // @ts-ignore
     return this._create(data, params);
   }
 
@@ -255,12 +293,29 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
   }
 
   async move(oldId: string, newId: string) {
-    const oldItem = await this._get(oldId);
-    const newItem = await this._create({
-      id: newId,
-      stream: oldItem.stream
+    try {
+      const oldItem = await this._get(oldId);
+      const newItem = await this._create({
+        id: newId,
+        stream: oldItem.stream
+      });
+      await this._remove(oldId);
+      return newItem;
+    } catch (err) {
+      this.errorHandler(err);
+    }
+  }
+
+  errorHandler(err) {
+    console.log(err);
+    if (!err) return;
+
+    if (err instanceof FeathersError) {
+      throw err;
+    }
+
+    throw new GeneralError("Error", {
+      error: err
     });
-    await this._remove(oldId);
-    return newItem;
   }
 }

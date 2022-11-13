@@ -142,6 +142,8 @@ export class ServiceFileStreamFS implements ServiceFileStream {
     data: MaybeArray<ServiceFileStreamCreateData>,
     params?: any
   ): Promise<MaybeArray<ServiceFileStreamCreateResult>> {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     return this._create(data, params);
   }
 
