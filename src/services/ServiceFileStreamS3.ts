@@ -13,7 +13,6 @@ import {
 import { FeathersError, GeneralError, NotFound } from "@feathersjs/errors";
 import type { Readable } from "node:stream";
 import { PassThrough } from "node:stream";
-import { Upload } from "@aws-sdk/lib-storage";
 import type {
   ServiceFileStream,
   ServiceFileStreamCreateData,
@@ -22,6 +21,7 @@ import type {
 } from "../types";
 import type { MaybeArray } from "../utility-types";
 import { asArray } from "../utils";
+import path from "node:path";
 
 export type ServiceFileStreamS3Options = {
   s3: S3Client;
@@ -100,12 +100,13 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
       const passThroughStream = new PassThrough();
       stream.pipe(passThroughStream);
 
-      // const fileName = path.basename(id);
+      const fileName = path.basename(id);
 
       const putObjectInput: PutObjectCommandInput = {
         Bucket: bucket,
         Key: id,
         Body: passThroughStream,
+        ContentDisposition: `attachment; filename= ${fileName}`,
         ...options
       };
 
