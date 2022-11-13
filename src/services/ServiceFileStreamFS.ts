@@ -33,12 +33,12 @@ export class ServiceFileStreamFS implements ServiceFileStream {
 
     const contentType = mime.lookup(id) || "application/octet-stream";
 
-    const fileName = path.basename(id);
+    // const fileName = path.basename(id);
 
     return {
       header: {
         "Content-Type": contentType,
-        "Content-disposition": `attachment;filename= "${fileName}"`,
+        "Content-disposition": "inline",
         "Content-Length": info.size
       },
       stream

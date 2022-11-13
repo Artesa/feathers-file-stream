@@ -83,7 +83,7 @@ describe("s3.test.ts", function () {
       ContentLength: buffer.length,
       ContentType: "text/plain",
       ETag: "123",
-      ContentDisposition: `attachment; filename= "${id}"`
+      ContentDisposition: "inline"
     });
     mock.on(GetObjectCommand).resolves({ Body: Readable.from(buffer) as any });
 
@@ -103,9 +103,7 @@ describe("s3.test.ts", function () {
     expect(result.body).to.be.an.instanceOf(Buffer);
     expect(result.body).to.deep.equal(buffer);
     expect(result.header["content-type"]).to.equal("text/plain; charset=utf-8");
-    expect(result.header["content-disposition"]).to.equal(
-      `attachment; filename= "${id}"`
-    );
+    expect(result.header["content-disposition"]).to.equal("inline");
     expect(result.header["content-length"]).to.equal(`${buffer.length}`);
   });
 
