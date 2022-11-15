@@ -35,12 +35,10 @@ export type ServiceFileStreamS3GetParams = {
 
 export type ServiceFileStreamS3GetResult = ServiceFileStreamGetResult;
 
-export type ServiceFileStreamS3CreateData = Partial<
-  Omit<PutObjectCommandInput, "Body">
-> &
-  ServiceFileStreamCreateData & {
-    size?: number;
-  };
+export type ServiceFileStreamS3CreateData = ServiceFileStreamCreateData & {
+  size?: number;
+  mimeType?: string;
+};
 
 export type ServiceFileStreamS3CreateParams = {
   bucket?: string;
@@ -82,7 +80,9 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
     const bucket = params?.bucket || this.bucket;
 
     const promises = items.map(async (item) => {
-      const { stream, id, ...options } = item;
+      const { stream, id, size, mimeType } = item;
+
+      console.log(id);
 
       const passThroughStream = new PassThrough();
       stream.pipe(passThroughStream);
@@ -90,12 +90,15 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
       const putObjectInput: PutObjectCommandInput = {
         Bucket: bucket,
         Key: id,
-        Body: passThroughStream,
-        ...options
+        Body: passThroughStream
       };
 
-      if (item.size) {
-        putObjectInput.ContentLength = item.size;
+      if (size) {
+        putObjectInput.ContentLength = size;
+      }
+
+      if (mimeType) {
+        putObjectInput.ContentType = mimeType;
       }
 
       try {
