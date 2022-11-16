@@ -26,14 +26,17 @@ export const expressHandleIncomingStreams = <
     options: expressHandleIncomingStreamsOptions<REQ, RES, RT>
   ) => {
   const { field } = options;
-  return (req: REQ, res: RES, next: NextFunction) => {
+  return (err: Error | undefined, req: REQ, res: RES, next: NextFunction) => {
+    if (err) {
+      return next(err);
+    }
+
     if (
       req.method !== "POST" ||
       !(field in req) ||
       (options.isArray && !Array.isArray(req[field]))
     ) {
-      next();
-      return;
+      return next();
     }
 
     const { isArray, items } = asArray<Express.Multer.File>(req[field]);
@@ -50,8 +53,7 @@ export const expressHandleIncomingStreams = <
 
     req.body = isArray ? files : files[0];
 
-    next();
-    return;
+    return next();
   };
 };
 
@@ -66,52 +68,58 @@ const errorMessages = {
   MISSING_FIELD_NAME: "Field name missing"
 };
 
-export const expressHandleMulterError = () => (err, req, res, next) => {
-  if (!err) {
-    next();
-    return;
-  }
+export const expressHandleMulterError =
+  () =>
+    (err: Error | undefined, req: Request, res: Response, next: NextFunction) => {
+      if (!err) {
+        return next();
+      }
 
-  let feathersError = err;
-  switch (err.code) {
-    case "LIMIT_PART_COUNT":
-      feathersError = new BadRequest(errorMessages.LIMIT_PART_COUNT);
-      break;
-    case "LIMIT_FILE_SIZE":
-      feathersError = new BadRequest(errorMessages.LIMIT_FILE_SIZE);
-      break;
-    case "LIMIT_FILE_COUNT":
-      feathersError = new BadRequest(errorMessages.LIMIT_FILE_COUNT);
-      break;
-    case "LIMIT_FIELD_KEY":
-      feathersError = new BadRequest(errorMessages.LIMIT_FIELD_KEY);
-      break;
-    case "LIMIT_FIELD_VALUE":
-      feathersError = new BadRequest(errorMessages.LIMIT_FIELD_VALUE);
-      break;
-    case "LIMIT_FIELD_COUNT":
-      feathersError = new BadRequest(errorMessages.LIMIT_FIELD_COUNT);
-      break;
-    case "LIMIT_UNEXPECTED_FILE":
-      feathersError = new BadRequest(errorMessages.LIMIT_UNEXPECTED_FILE);
-      break;
-    case "MISSING_FIELD_NAME":
-      feathersError = new BadRequest(errorMessages.MISSING_FIELD_NAME);
-      break;
-    default:
-      break;
-  }
+      let feathersError = err;
+      switch (err.code) {
+        case "LIMIT_PART_COUNT":
+          feathersError = new BadRequest(errorMessages.LIMIT_PART_COUNT);
+          break;
+        case "LIMIT_FILE_SIZE":
+          feathersError = new BadRequest(errorMessages.LIMIT_FILE_SIZE);
+          break;
+        case "LIMIT_FILE_COUNT":
+          feathersError = new BadRequest(errorMessages.LIMIT_FILE_COUNT);
+          break;
+        case "LIMIT_FIELD_KEY":
+          feathersError = new BadRequest(errorMessages.LIMIT_FIELD_KEY);
+          break;
+        case "LIMIT_FIELD_VALUE":
+          feathersError = new BadRequest(errorMessages.LIMIT_FIELD_VALUE);
+          break;
+        case "LIMIT_FIELD_COUNT":
+          feathersError = new BadRequest(errorMessages.LIMIT_FIELD_COUNT);
+          break;
+        case "LIMIT_UNEXPECTED_FILE":
+          feathersError = new BadRequest(errorMessages.LIMIT_UNEXPECTED_FILE);
+          break;
+        case "MISSING_FIELD_NAME":
+          feathersError = new BadRequest(errorMessages.MISSING_FIELD_NAME);
+          break;
+        default:
+          break;
+      }
 
-  next(feathersError);
-};
+      next(feathersError);
+    };
 
 export const expressSendStreamForGet =
   () =>
     (
+      err: Error,
       req: Request,
       res: Response & { data: ServiceFileStreamGetResult },
       next: NextFunction
     ) => {
+      if (err) {
+        return next(err);
+      }
+
       if (req.method !== "GET" || !isGetResult(res.data)) {
         return next();
       }
