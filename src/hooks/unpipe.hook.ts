@@ -21,7 +21,7 @@ export const unpipe =
 
       const { data } = context;
 
-      const { isArray, items } = asArray(data);
+      const { items } = asArray(data);
 
       const promises = items.map(async (item) => {
         const { stream } = item;

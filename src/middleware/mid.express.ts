@@ -2,8 +2,8 @@ import type { Request, Response, NextFunction } from "express";
 import type { ServiceFileStreamGetResult } from "../types";
 import { asArray, isGetResult } from "../utils";
 import fs from "node:fs";
-import "multer";
-import { BadRequest } from "@feathersjs/errors";
+import type { MulterError } from "multer";
+import { BadRequest, FeathersError, GeneralError } from "@feathersjs/errors";
 
 export type expressHandleIncomingStreamsOptions<
   REQ,
@@ -26,11 +26,7 @@ export const expressHandleIncomingStreams = <
     options: expressHandleIncomingStreamsOptions<REQ, RES, RT>
   ) => {
   const { field } = options;
-  return (err: Error | undefined, req: REQ, res: RES, next: NextFunction) => {
-    if (err) {
-      return next(err);
-    }
-
+  return (req: REQ, res: RES, next: NextFunction) => {
     if (
       req.method !== "POST" ||
       !(field in req) ||
@@ -67,41 +63,51 @@ const errorMessages = {
   LIMIT_UNEXPECTED_FILE: "Unexpected field",
   MISSING_FIELD_NAME: "Field name missing"
 };
-
 export const expressHandleMulterError =
   () =>
-    (err: Error | undefined, req: Request, res: Response, next: NextFunction) => {
+    (
+      err: Error | MulterError | FeathersError | undefined,
+      req: Request,
+      res: Response,
+      next: NextFunction
+    ) => {
       if (!err) {
         return next();
       }
 
-      let feathersError = err;
+      if (err instanceof FeathersError) {
+        return next(err);
+      }
+
+      if (!("code" in err)) {
+        return next(new GeneralError(err.message, err));
+      }
+
+      let feathersError;
       switch (err.code) {
         case "LIMIT_PART_COUNT":
-          feathersError = new BadRequest(errorMessages.LIMIT_PART_COUNT);
+          feathersError = new BadRequest(errorMessages[err.code]);
           break;
         case "LIMIT_FILE_SIZE":
-          feathersError = new BadRequest(errorMessages.LIMIT_FILE_SIZE);
+          feathersError = new BadRequest(errorMessages[err.code]);
           break;
         case "LIMIT_FILE_COUNT":
-          feathersError = new BadRequest(errorMessages.LIMIT_FILE_COUNT);
+          feathersError = new BadRequest(errorMessages[err.code]);
           break;
         case "LIMIT_FIELD_KEY":
-          feathersError = new BadRequest(errorMessages.LIMIT_FIELD_KEY);
+          feathersError = new BadRequest(errorMessages[err.code]);
           break;
         case "LIMIT_FIELD_VALUE":
-          feathersError = new BadRequest(errorMessages.LIMIT_FIELD_VALUE);
+          feathersError = new BadRequest(errorMessages[err.code]);
           break;
         case "LIMIT_FIELD_COUNT":
-          feathersError = new BadRequest(errorMessages.LIMIT_FIELD_COUNT);
+          feathersError = new BadRequest(errorMessages[err.code]);
           break;
         case "LIMIT_UNEXPECTED_FILE":
-          feathersError = new BadRequest(errorMessages.LIMIT_UNEXPECTED_FILE);
-          break;
-        case "MISSING_FIELD_NAME":
-          feathersError = new BadRequest(errorMessages.MISSING_FIELD_NAME);
+          feathersError = new BadRequest(errorMessages[err.code]);
           break;
         default:
+          feathersError = new GeneralError("General Error", err);
           break;
       }
 
@@ -111,15 +117,10 @@ export const expressHandleMulterError =
 export const expressSendStreamForGet =
   () =>
     (
-      err: Error,
       req: Request,
       res: Response & { data: ServiceFileStreamGetResult },
       next: NextFunction
     ) => {
-      if (err) {
-        return next(err);
-      }
-
       if (req.method !== "GET" || !isGetResult(res.data)) {
         return next();
       }
