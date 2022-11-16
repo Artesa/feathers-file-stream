@@ -82,8 +82,6 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
     const promises = items.map(async (item) => {
       const { stream, id, size, mimeType } = item;
 
-      console.log(id);
-
       const passThroughStream = new PassThrough();
       stream.pipe(passThroughStream);
 
