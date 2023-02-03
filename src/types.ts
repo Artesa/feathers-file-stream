@@ -12,6 +12,7 @@ export type ServiceFileStreamCreateResult = {
 export type ServiceFileStreamGetResult = {
   header: Record<string, any>;
   stream: Readable;
+  status: number;
 };
 
 export interface ServiceFileStream {

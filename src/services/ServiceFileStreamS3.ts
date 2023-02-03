@@ -2,14 +2,14 @@ import type {
   DeleteObjectCommandInput,
   HeadObjectCommandOutput,
   PutObjectCommandInput,
-  S3Client
+  S3Client,
 } from "@aws-sdk/client-s3";
 import {
   DeleteObjectCommand,
   CopyObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
-  PutObjectCommand
+  PutObjectCommand,
 } from "@aws-sdk/client-s3";
 import { FeathersError, GeneralError, NotFound } from "@feathersjs/errors";
 import type { Readable } from "node:stream";
@@ -18,7 +18,7 @@ import type {
   ServiceFileStream,
   ServiceFileStreamCreateData,
   ServiceFileStreamCreateResult,
-  ServiceFileStreamGetResult
+  ServiceFileStreamGetResult,
 } from "../types";
 import type { MaybeArray } from "../utility-types";
 import { asArray } from "../utils";
@@ -88,7 +88,7 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
       const putObjectInput: PutObjectCommandInput = {
         Bucket: bucket,
         Key: id,
-        Body: passThroughStream
+        Body: passThroughStream,
       };
 
       if (size) {
@@ -117,16 +117,20 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
   ): Promise<ServiceFileStreamS3GetResult> {
     const headResponse = await this.getHeadForObject(id, params);
     const bucket = params?.bucket || this.bucket;
+
+    const range = params?.headers?.range as string | undefined;
+
     try {
       const { s3 } = this;
       const params = {
         Bucket: bucket,
-        Key: id
+        Key: id,
+        Range: range,
       };
 
       const header: Record<string, any> = {
         ETag: headResponse.ETag,
-        "Content-Disposition": "inline"
+        "Content-Disposition": "inline",
       };
 
       if (headResponse.ContentLength) {
@@ -141,13 +145,26 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
         header["Content-Encoding"] = headResponse.ContentEncoding;
       }
 
+      if (headResponse.AcceptRanges) {
+        header["Accept-Ranges"] = headResponse.AcceptRanges;
+      }
+
       // Now get the object data and stream it
       const response = await s3.send(new GetObjectCommand(params));
+
+      let status = 200;
+
+      if (response.ContentRange) {
+        header["Content-Range"] = response.ContentRange;
+        status = 206;
+      }
+
       const stream = response.Body as Readable;
 
       return {
         header,
-        stream
+        stream,
+        status,
       };
     } catch (err) {
       this.errorHandler(err);
@@ -168,12 +185,12 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
         new DeleteObjectCommand({
           ...options,
           Bucket: bucket,
-          Key: id
+          Key: id,
         })
       );
 
       return {
-        id
+        id,
       };
     } catch (err) {
       this.errorHandler(err);
@@ -219,12 +236,12 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
       return await s3.send(
         new HeadObjectCommand({
           Bucket: bucket,
-          Key: id
+          Key: id,
         })
       );
     } catch (err) {
       throw new NotFound("File not found", {
-        error: err
+        error: err,
       });
     }
   }
@@ -242,19 +259,19 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
         new CopyObjectCommand({
           Bucket: this.bucket,
           CopySource: `${this.bucket}/${oldId}`,
-          Key: newId
+          Key: newId,
         })
       );
 
       await this.s3.send(
         new DeleteObjectCommand({
           Bucket: this.bucket,
-          Key: oldId
+          Key: oldId,
         })
       );
 
       return {
-        id: newId
+        id: newId,
       };
     } catch (err) {
       this.errorHandler(err);
@@ -269,7 +286,7 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
     }
 
     throw new GeneralError("Error", {
-      error: err
+      error: err,
     });
   }
 }

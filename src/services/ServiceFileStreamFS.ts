@@ -8,7 +8,7 @@ import type {
   ServiceFileStream,
   ServiceFileStreamCreateData,
   ServiceFileStreamCreateResult,
-  ServiceFileStreamGetResult
+  ServiceFileStreamGetResult,
 } from "../types";
 import type { MaybeArray } from "../utility-types";
 import { asArray } from "../utils";
@@ -28,8 +28,24 @@ export class ServiceFileStreamFS implements ServiceFileStream {
   async _get(id: string, _params?: any): Promise<ServiceFileStreamGetResult> {
     const info = await this.getStat(id);
 
+    const range = _params?.range as string | undefined;
+
+    let start = 0;
+    let end = info.size;
+    let contentRange = false;
+    let contentLength = info.size;
+
+    if (range) {
+      const positions = range.replace(/bytes=/, "").split("-");
+      start = parseInt(positions[0], 10);
+      end = positions[1] ? parseInt(positions[1], 10) : info.size - 1;
+      const chunksize = end - start + 1;
+      contentRange = true;
+      contentLength = chunksize;
+    }
+
     const { root } = this.options;
-    const stream = createReadStream(path.join(root, id));
+    const stream = createReadStream(path.join(root, id), { start, end });
 
     const contentType = mime.lookup(id) || "application/octet-stream";
 
@@ -37,11 +53,18 @@ export class ServiceFileStreamFS implements ServiceFileStream {
 
     return {
       header: {
+        "Accept-Ranges": "bytes",
         "Content-Type": contentType,
         "Content-disposition": "inline",
-        "Content-Length": info.size
+        "Content-Length": contentLength,
+        ...(contentRange
+          ? {
+            "Content-Range": "bytes " + start + "-" + end + "/" + info.size,
+          }
+          : {}),
       },
-      stream
+      status: contentRange ? 206 : 200,
+      stream,
     };
   }
 
@@ -72,7 +95,7 @@ export class ServiceFileStreamFS implements ServiceFileStream {
     const results = items.map((item) => {
       const { id } = item;
       return {
-        id
+        id,
       };
     });
 
@@ -94,7 +117,7 @@ export class ServiceFileStreamFS implements ServiceFileStream {
       return { id };
     } catch (error) {
       throw new GeneralError(`Could not remove file ${id}`, {
-        error
+        error,
       });
     }
   }
@@ -164,7 +187,7 @@ export class ServiceFileStreamFS implements ServiceFileStream {
       return { id: newId };
     } catch (error) {
       throw new GeneralError(`Could not move file ${oldId} to ${newId}`, {
-        error
+        error,
       });
     }
   }
