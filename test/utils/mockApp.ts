@@ -1,7 +1,7 @@
 import type { Application } from "@feathersjs/express";
-import express from "@feathersjs/express";
 import type { ServiceAddons } from "@feathersjs/feathers";
-import feathers from "@feathersjs/feathers";
+import { feathers } from "@feathersjs/feathers";
+import express, { json, urlencoded, rest, notFound, errorHandler } from "@feathersjs/express";
 import getPort from "get-port";
 import multer from "multer";
 import compress from "compression";
@@ -32,14 +32,14 @@ export const mockFSServer = async (options?: MockFSServerOptions) => {
   app.use(helmet());
   app.use(cors());
   app.use(compress());
-  app.use(express.json());
+  app.use(json());
   app.use(
-    express.urlencoded({
+    urlencoded({
       extended: true
     })
   );
 
-  app.configure(express.rest());
+  app.configure(rest());
 
   const port = await getPort();
 
@@ -52,7 +52,7 @@ export const mockFSServer = async (options?: MockFSServerOptions) => {
     }
   });
 
-  app.use(
+  (app as any).use(
     "/uploads",
     multerInstance.array("files"),
     expressHandleMulterError(),
@@ -67,8 +67,8 @@ export const mockFSServer = async (options?: MockFSServerOptions) => {
     expressSendStreamForGet()
   );
 
-  app.use(express.notFound());
-  app.use(express.errorHandler());
+  app.use(notFound());
+  app.use(errorHandler());
 
   await app.listen(port);
 

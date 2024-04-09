@@ -165,9 +165,10 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
         header,
         stream,
         status,
-      };
+      } as ServiceFileStreamS3GetResult;
     } catch (err) {
       this.errorHandler(err);
+      throw err;
     }
   }
 
@@ -194,6 +195,7 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
       };
     } catch (err) {
       this.errorHandler(err);
+      throw err;
     }
   }
 
@@ -275,10 +277,11 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
       };
     } catch (err) {
       this.errorHandler(err);
+      throw err;
     }
   }
 
-  errorHandler(err) {
+  errorHandler(err: any) {
     if (!err) return;
 
     if (err instanceof FeathersError) {

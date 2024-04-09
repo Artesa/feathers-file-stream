@@ -2,7 +2,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 
 export default async function () {
-  const unlink = async (dir) => {
+  const unlink = async (dir: string) => {
     await fsp.rm(dir, { recursive: true, force: true });
     fsp.mkdir(dir, { recursive: true });
   };

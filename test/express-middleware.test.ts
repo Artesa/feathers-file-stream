@@ -23,7 +23,7 @@ describe("express-middleware.test.ts", function () {
     uploadsService.hooks({
       before: {
         create: [
-          async (context) => {
+          async (context: any) => {
             const { data } = context;
 
             expect(data).to.be.an("array");
@@ -51,7 +51,7 @@ describe("express-middleware.test.ts", function () {
 
     const buffer = Buffer.from("some data");
 
-    await supertest(app).post("/uploads").attach("files", buffer, "test.txt");
+    await supertest(app as any).post("/uploads").attach("files", buffer, "test.txt");
 
     expect(transformCalled).to.be.true;
     expect(hookCalled).to.be.true;

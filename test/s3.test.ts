@@ -47,13 +47,13 @@ describe("s3.test.ts", function () {
   it("get throws NotFound for non-existing file", async () => {
     mock.on(HeadObjectCommand).rejects();
 
-    const res = await supertest(app).get("/uploads/does-not-exist").expect(404);
+    const res = await supertest(app as any).get("/uploads/does-not-exist").expect(404);
   });
 
   it("remove throws NotFound for non-existing file", async () => {
     mock.on(HeadObjectCommand).rejects();
 
-    const res = await supertest(app)
+    const res = await supertest(app as any)
       .delete("/uploads/does-not-exist")
       .expect(404);
   });
@@ -64,7 +64,7 @@ describe("s3.test.ts", function () {
     mock.on(CreateMultipartUploadCommand).resolves({ UploadId: "123" });
     mock.on(UploadPartCommand).resolves({ ETag: "123" });
 
-    const { body: uploadResult } = await supertest(app)
+    const { body: uploadResult } = await supertest(app as any)
       .post("/uploads")
       .attach("files", buffer, "test.txt")
       .expect(201);
@@ -87,13 +87,13 @@ describe("s3.test.ts", function () {
     });
     mock.on(GetObjectCommand).resolves({ Body: Readable.from(buffer) as any });
 
-    const result = await supertest(app)
+    const result = await supertest(app as any)
       .get(`/uploads/${id}`)
       .buffer()
-      .parse((res, cb) => {
+      .parse((res: any, cb) => {
         res.setEncoding("binary");
         res.data = "";
-        res.on("data", (chunk) => {
+        res.on("data", (chunk: any) => {
           res.data += chunk;
         });
         res.on("end", () => cb(null, Buffer.from(res.data, "binary")));
@@ -114,7 +114,7 @@ describe("s3.test.ts", function () {
     mock.on(GetObjectCommand).resolves({});
     mock.on(DeleteObjectCommand).resolves({});
 
-    const result = await supertest(app).delete(`/uploads/${id}`).expect(200);
+    const result = await supertest(app as any).delete(`/uploads/${id}`).expect(200);
 
     expect(result.body).to.be.an("object");
     expect(result.body.id).to.equal(id);

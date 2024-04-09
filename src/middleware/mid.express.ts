@@ -30,12 +30,12 @@ export const expressHandleIncomingStreams = <
     if (
       req.method !== "POST" ||
       !(field in req) ||
-      (options.isArray && !Array.isArray(req[field]))
+      (options.isArray && !Array.isArray((req as any)[field]))
     ) {
       return next();
     }
 
-    const { isArray, items } = asArray<Express.Multer.File>(req[field]);
+    const { isArray, items } = asArray<Express.Multer.File>((req as any)[field]);
 
     items.forEach((file) => {
       file.stream = fs.createReadStream(file.path);
@@ -43,7 +43,7 @@ export const expressHandleIncomingStreams = <
 
     const files = options.transform
       ? items.map((file) => {
-        return options.transform(file, req, res) || file;
+        return options.transform!(file, req, res) || file;
       })
       : items;
 

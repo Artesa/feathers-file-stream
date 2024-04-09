@@ -28,11 +28,11 @@ describe("fs.test.ts", function () {
   });
 
   it("get throws NotFound for non-existing file", async () => {
-    const res = await supertest(app).get("/uploads/does-not-exist").expect(404);
+    const res = await supertest(app as any).get("/uploads/does-not-exist").expect(404);
   });
 
   it("remove throws NotFound for non-existing file", async () => {
-    const res = await supertest(app)
+    const res = await supertest(app as any)
       .delete("/uploads/does-not-exist")
       .expect(404);
   });
@@ -41,7 +41,7 @@ describe("fs.test.ts", function () {
     it("throws appropriate error for big file", async function () {
       const buffer = Buffer.from("a".repeat(1e6 * 5)); // 5MB
 
-      const result = await supertest(app)
+      const result = await supertest(app as any)
         .post("/uploads")
         .attach("files", buffer, "test.txt")
         .expect(400);
@@ -53,7 +53,7 @@ describe("fs.test.ts", function () {
     it("uploads file", async function () {
       const buffer = Buffer.from("some data");
 
-      const { body: uploadResult } = await supertest(app)
+      const { body: uploadResult } = await supertest(app as any)
         .post("/uploads")
         .attach("files", buffer, "test.txt")
         .expect(201);
@@ -69,7 +69,7 @@ describe("fs.test.ts", function () {
         id: "test.txt",
         stream: Buffer.from("some data"),
         filename: "test.txt",
-      });
+      } as any);
 
       expect(result).to.be.an("object").that.has.property("id").which.is.a("string");
 
@@ -85,13 +85,13 @@ describe("fs.test.ts", function () {
     const filepath = path.join(__dirname, "uploads", id);
     await fsp.writeFile(filepath, buffer);
 
-    const result = await supertest(app)
+    const result = await supertest(app as any)
       .get(`/uploads/${id}`)
       .buffer()
-      .parse((res, cb) => {
+      .parse((res: any, cb) => {
         res.setEncoding("binary");
         res.data = "";
-        res.on("data", (chunk) => {
+        res.on("data", (chunk: any) => {
           res.data += chunk;
         });
         res.on("end", () => cb(null, Buffer.from(res.data, "binary")));
@@ -111,7 +111,7 @@ describe("fs.test.ts", function () {
     const filepath = path.join(__dirname, "uploads", id);
     await fsp.writeFile(filepath, buffer);
 
-    const result = await supertest(app).delete(`/uploads/${id}`).expect(200);
+    const result = await supertest(app as any).delete(`/uploads/${id}`).expect(200);
 
     expect(result.body).to.be.an("object");
     expect(result.body.id).to.equal(id);
@@ -124,7 +124,7 @@ describe("fs.test.ts", function () {
     const idFolder = (id: string) => path.join(__dirname, "uploads", id);
     await fsp.writeFile(idFolder(oldId), buffer);
 
-    const exists = async (file) =>
+    const exists = async (file: any) =>
       fsp
         .access(file)
         .then(() => true)
