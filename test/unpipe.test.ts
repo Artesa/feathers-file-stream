@@ -26,7 +26,7 @@ describe("unpipe.test.ts", function () {
       },
       error: {
         create: [
-          (context) => {
+          (context: any) => {
             expect(context.error).to.be.an.instanceOf(FeathersError);
             expect(context.error.code).to.equal(900);
             expect(context.data).to.be.an("array");
@@ -37,7 +37,7 @@ describe("unpipe.test.ts", function () {
             throwHookRun = true;
           },
           unpipe({ unlink: "path" }),
-          (context) => {
+          (context: any) => {
             checkErrorRun = true;
             const isDestroyed = context.data[0].stream.destroyed;
             expect(isDestroyed).to.equal(true);
@@ -47,7 +47,7 @@ describe("unpipe.test.ts", function () {
     });
     const buffer = Buffer.from("some data");
 
-    const { body: uploadResult } = await supertest(app)
+    const { body: uploadResult } = await supertest(app as any)
       .post("/uploads")
       .attach("files", buffer, "test.txt")
       .expect(900);

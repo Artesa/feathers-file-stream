@@ -45,7 +45,7 @@ describe("fs-nested.test.ts", function () {
   it("upload file", async function () {
     const buffer = Buffer.from("some data");
 
-    const { body: uploadResult } = await supertest(app)
+    const { body: uploadResult } = await supertest(app as any)
       .post("/uploads")
       .attach("files", buffer, "test.txt")
       .expect(201);
@@ -63,13 +63,13 @@ describe("fs-nested.test.ts", function () {
     const filepath = path.join(__dirname, "uploads/test/test/", id);
     await fsp.writeFile(filepath, buffer);
 
-    const { body: downloadResult } = await supertest(app)
+    const { body: downloadResult } = await supertest(app as any)
       .get(`/uploads/${id}`)
       .buffer()
-      .parse((res, cb) => {
+      .parse((res: any, cb) => {
         res.setEncoding("binary");
         res.data = "";
-        res.on("data", (chunk) => {
+        res.on("data", (chunk: any) => {
           res.data += chunk;
         });
         res.on("end", () => cb(null, Buffer.from(res.data, "binary")));
@@ -86,7 +86,7 @@ describe("fs-nested.test.ts", function () {
     const filepath = path.join(__dirname, "uploads/test/test/", id);
     await fsp.writeFile(filepath, buffer);
 
-    const result = await supertest(app).delete(`/uploads/${id}`).expect(200);
+    const result = await supertest(app as any).delete(`/uploads/${id}`).expect(200);
 
     expect(result.body).to.be.an("object");
     expect(result.body.id).to.equal(`test/test/${id}`);
@@ -100,7 +100,7 @@ describe("fs-nested.test.ts", function () {
     await fsp.mkdir(path.dirname(idFolder(oldId)), { recursive: true });
     await fsp.writeFile(idFolder(oldId), buffer);
 
-    const exists = async (file) =>
+    const exists = async (file: string) =>
       fsp
         .access(file)
         .then(() => true)

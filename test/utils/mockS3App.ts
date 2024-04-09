@@ -1,7 +1,6 @@
 import type { ServiceAddons } from "@feathersjs/feathers";
-import feathers from "@feathersjs/feathers";
-import express from "@feathersjs/express";
-import { mockClient } from "aws-sdk-client-mock";
+import { feathers } from "@feathersjs/feathers";
+import express, { json, urlencoded, rest, notFound, errorHandler } from "@feathersjs/express";
 import getPort from "get-port";
 import multer from "multer";
 import compress from "compression";
@@ -30,14 +29,14 @@ export const mockS3Server = async (options: MockFSServerOptions) => {
   app.use(helmet());
   app.use(cors());
   app.use(compress());
-  app.use(express.json());
+  app.use(json());
   app.use(
-    express.urlencoded({
+    urlencoded({
       extended: true
     })
   );
 
-  app.configure(express.rest());
+  app.configure(rest());
 
   const port = await getPort();
 
@@ -47,7 +46,7 @@ export const mockS3Server = async (options: MockFSServerOptions) => {
     dest: path.join(__dirname, "../", "temp-uploads/s3")
   });
 
-  app.use(
+  (app as any).use(
     "/uploads",
     multerInstance.array("files"),
     expressHandleIncomingStreams({
@@ -62,14 +61,10 @@ export const mockS3Server = async (options: MockFSServerOptions) => {
     expressSendStreamForGet()
   );
 
-  app.use(express.notFound());
-  app.use(express.errorHandler());
+  app.use(notFound());
+  app.use(errorHandler());
 
-  const server = app.listen(port);
+  await app.listen(port);
 
-  const promise = new Promise<typeof app>((resolve) => {
-    server.on("listening", () => resolve(app));
-  });
-
-  return await promise;
+  return app;
 };
