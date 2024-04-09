@@ -63,6 +63,20 @@ describe("fs.test.ts", function () {
       expect(uploadResult[0]).to.be.an("object");
       expect(uploadResult[0].id).to.be.a("string");
     });
+
+    it("uploads buffer file", async function () {
+      const result = await app.service("uploads").create({
+        id: "test.txt",
+        stream: Buffer.from("some data"),
+        filename: "test.txt",
+      });
+
+      expect(result).to.be.an("object").that.has.property("id").which.is.a("string");
+
+      const file = await app.service("uploads").get(result.id);
+
+      expect(file).to.be.an("object").that.has.property("stream");
+    });
   });
 
   it("downloads file", async function () {

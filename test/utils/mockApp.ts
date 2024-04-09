@@ -70,13 +70,9 @@ export const mockFSServer = async (options?: MockFSServerOptions) => {
   app.use(express.notFound());
   app.use(express.errorHandler());
 
-  const server = app.listen(port);
+  await app.listen(port);
 
-  const promise = new Promise<typeof app>((resolve) => {
-    server.on("listening", () => resolve(app));
-  });
-
-  return await promise;
+  return app;
 };
 
 export const mockClient = (app: Application) => {

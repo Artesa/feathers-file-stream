@@ -1,7 +1,7 @@
 import type { Params } from "@feathersjs/feathers";
 import { GeneralError, NotFound } from "@feathersjs/errors";
-import { createReadStream, createWriteStream } from "node:fs";
-import fsp from "node:fs/promises";
+import { createReadStream, createWriteStream, existsSync } from "node:fs";
+import { mkdir, writeFile, unlink, stat, access, rename } from "node:fs/promises";
 import path from "node:path";
 import streamPomises from "node:stream/promises";
 import type {
@@ -13,9 +13,15 @@ import type {
 import type { MaybeArray } from "../utility-types";
 import { asArray } from "../utils";
 import mime from "mime-types";
+import type { Readable } from "node:stream";
 
 export type ServiceFileStreamFSOptions = {
   root: string;
+};
+
+export type ServiceFileStreamFSCreateData = {
+  id: string;
+  stream: Readable | Buffer;
 };
 
 export class ServiceFileStreamFS implements ServiceFileStream {
@@ -69,26 +75,33 @@ export class ServiceFileStreamFS implements ServiceFileStream {
   }
 
   async _create(
-    data: ServiceFileStreamCreateData,
+    data: ServiceFileStreamFSCreateData,
     _params?: any
   ): Promise<ServiceFileStreamCreateResult>;
   async _create(
-    data: ServiceFileStreamCreateData[],
+    data: ServiceFileStreamFSCreateData[],
     _params?: any
   ): Promise<ServiceFileStreamCreateResult[]>;
   async _create(
-    data: MaybeArray<ServiceFileStreamCreateData>,
+    data: MaybeArray<ServiceFileStreamFSCreateData>,
     _params?: any
   ): Promise<MaybeArray<ServiceFileStreamCreateResult>> {
     const { root } = this.options;
     const { isArray, items } = asArray(data);
     const promises = items.map(async (item) => {
       const { id, stream } = item;
+      const filePath = path.join(root, id);
+
       // create the directory if it doesn't exist
-      const dir = path.dirname(id);
-      await fsp.mkdir(path.join(root, dir), { recursive: true });
-      const writeStream = createWriteStream(path.join(root, id));
-      await streamPomises.pipeline(stream, writeStream);
+      await this.mkdir(path.dirname(filePath));
+
+      if (Buffer.isBuffer(stream)) {
+        await writeFile(filePath, stream);
+        return;
+      } else {
+        const writeStream = createWriteStream(path.join(root, id));
+        await streamPomises.pipeline(stream, writeStream);
+      }      
     });
     await Promise.all(promises);
 
@@ -113,7 +126,7 @@ export class ServiceFileStreamFS implements ServiceFileStream {
     const file = path.join(root, id);
 
     try {
-      await fsp.unlink(file);
+      await unlink(file);
       return { id };
     } catch (error) {
       throw new GeneralError(`Could not remove file ${id}`, {
@@ -130,9 +143,15 @@ export class ServiceFileStreamFS implements ServiceFileStream {
   private async getStat(id: string) {
     const file = path.join(this.options.root, id);
     try {
-      return await fsp.stat(file);
+      return await stat(file);
     } catch (err) {
       throw new NotFound("File not found");
+    }
+  }
+
+  private async mkdir(dir: string) {
+    if (!existsSync(dir)) {
+      await mkdir(dir, { recursive: true });
     }
   }
 
@@ -143,7 +162,7 @@ export class ServiceFileStreamFS implements ServiceFileStream {
   async checkExistence(id: string) {
     const file = path.join(this.options.root, id);
     try {
-      await fsp.access(file);
+      await access(file);
     } catch (err) {
       throw new NotFound("File not found");
     }
@@ -154,15 +173,15 @@ export class ServiceFileStreamFS implements ServiceFileStream {
   }
 
   create(
-    data: ServiceFileStreamCreateData,
+    data: ServiceFileStreamFSCreateData,
     params?: any
   ): Promise<ServiceFileStreamCreateResult>;
   create(
-    data: ServiceFileStreamCreateData[],
+    data: ServiceFileStreamFSCreateData[],
     params?: any
   ): Promise<ServiceFileStreamCreateResult[]>;
   create(
-    data: MaybeArray<ServiceFileStreamCreateData>,
+    data: MaybeArray<ServiceFileStreamFSCreateData>,
     params?: any
   ): Promise<MaybeArray<ServiceFileStreamCreateResult>> {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -182,8 +201,8 @@ export class ServiceFileStreamFS implements ServiceFileStream {
     const newFile = path.join(root, newId);
 
     try {
-      await fsp.mkdir(path.dirname(newFile), { recursive: true });
-      await fsp.rename(oldFile, newFile);
+      await this.mkdir(path.dirname(newFile));
+      await rename(oldFile, newFile);
       return { id: newId };
     } catch (error) {
       throw new GeneralError(`Could not move file ${oldId} to ${newId}`, {
