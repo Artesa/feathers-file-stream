@@ -6,12 +6,11 @@ import path from "node:path";
 import streamPomises from "node:stream/promises";
 import type {
   ServiceFileStream,
-  ServiceFileStreamCreateData,
   ServiceFileStreamCreateResult,
   ServiceFileStreamGetResult,
 } from "../types";
 import type { MaybeArray } from "../utility-types";
-import { asArray } from "../utils";
+import { asArray, streamToGetResult } from "../utils";
 import mime from "mime-types";
 import type { Readable } from "node:stream";
 
@@ -53,25 +52,12 @@ export class ServiceFileStreamFS implements ServiceFileStream {
     const { root } = this.options;
     const stream = createReadStream(path.join(root, id), { start, end });
 
-    const contentType = mime.lookup(id) || "application/octet-stream";
-
-    // const fileName = path.basename(id);
-
-    return {
-      header: {
-        "Accept-Ranges": "bytes",
-        "Content-Type": contentType,
-        "Content-disposition": "inline",
-        "Content-Length": contentLength,
-        ...(contentRange
-          ? {
-            "Content-Range": "bytes " + start + "-" + end + "/" + info.size,
-          }
-          : {}),
-      },
-      status: contentRange ? 206 : 200,
+    return streamToGetResult({
       stream,
-    };
+      contentType: mime.lookup(id) || "application/octet-stream",
+      contentLength,
+      contentRange: contentRange ? `bytes ${start}-${end}/${contentLength}` : undefined,
+    });
   }
 
   async _create(

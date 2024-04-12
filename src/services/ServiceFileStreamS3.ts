@@ -21,7 +21,7 @@ import type {
   ServiceFileStreamGetResult,
 } from "../types";
 import type { MaybeArray } from "../utility-types";
-import { asArray } from "../utils";
+import { asArray, streamToGetResult } from "../utils";
 
 export type ServiceFileStreamS3Options = {
   s3: S3Client;
@@ -32,8 +32,6 @@ export type ServiceFileStreamS3GetParams = {
   bucket?: string;
   [key: string]: any;
 };
-
-export type ServiceFileStreamS3GetResult = ServiceFileStreamGetResult;
 
 export type ServiceFileStreamS3CreateData = ServiceFileStreamCreateData & {
   size?: number;
@@ -114,7 +112,7 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
   async _get(
     id: string,
     params?: ServiceFileStreamS3GetParams
-  ): Promise<ServiceFileStreamS3GetResult> {
+  ): Promise<ServiceFileStreamGetResult> {
     const headResponse = await this.getHeadForObject(id, params);
     const bucket = params?.bucket || this.bucket;
 
@@ -128,44 +126,22 @@ export class ServiceFileStreamS3 implements ServiceFileStream {
         Range: range,
       };
 
-      const header: Record<string, any> = {
-        ETag: headResponse.ETag,
-        "Content-Disposition": "inline",
-      };
-
-      if (headResponse.ContentLength) {
-        header["Content-Length"] = headResponse.ContentLength;
-      }
-
-      if (headResponse.ContentType) {
-        header["Content-Type"] = headResponse.ContentType;
-      }
-
-      if (headResponse.ContentEncoding) {
-        header["Content-Encoding"] = headResponse.ContentEncoding;
-      }
-
-      if (headResponse.AcceptRanges) {
-        header["Accept-Ranges"] = headResponse.AcceptRanges;
-      }
-
       // Now get the object data and stream it
       const response = await s3.send(new GetObjectCommand(params));
 
-      let status = 200;
-
-      if (response.ContentRange) {
-        header["Content-Range"] = response.ContentRange;
-        status = 206;
-      }
-
       const stream = response.Body as Readable;
 
-      return {
-        header,
+      return streamToGetResult({
+        header: {
+          ETag: headResponse.ETag,
+          "Content-Encoding": headResponse.ContentEncoding,
+          "Accept-Ranges": headResponse.AcceptRanges,
+        },
+        contentLength: headResponse.ContentLength,
+        contentType: headResponse.ContentType,
+        contentRange: response.ContentRange,
         stream,
-        status,
-      } as ServiceFileStreamS3GetResult;
+      });
     } catch (err) {
       this.errorHandler(err);
       throw err;
